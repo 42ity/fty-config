@@ -18,6 +18,7 @@ srr_available_features
     notification = /etc/fty-email/fty-email.cfg
     automationSettings = /etc/etn-automation/etn-automation.cfg
     user-session = /etc/fty/fty-session.cfg
+    network = /etc/network/interfaces
 
 augeas
     lensPath = /usr/share/fty/lenses/
