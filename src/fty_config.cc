@@ -98,7 +98,7 @@ int main(int argc, char *argv [])
         // Default configuration files path.
         paramsConfig[MONITORING_FEATURE_NAME] = "/etc/fty-nut/fty-nut.cfg";
         paramsConfig[NOTIFICATION_FEATURE_NAME] = "/etc/fty-email/fty-email.cfg";
-        paramsConfig[AUTOMATION_FEATURE_NAME] = "/etc/etn-automation/etn-automation.cfg";
+        paramsConfig[AUTOMATION_SETTINGS] = "/etc/etn-automation/etn-automation.cfg";
         paramsConfig[USER_SESSION_FEATURE_NAME] = "/etc/fty/fty-session.cfg";
         paramsConfig[DISCOVERY] = "/etc/fty-discovery/fty-discovery.cfg";
         paramsConfig[GENERAL_CONFIG] = "/etc/default/fty.cfg";
@@ -117,7 +117,7 @@ int main(int argc, char *argv [])
             // Configuration file path
             paramsConfig[MONITORING_FEATURE_NAME] = config.getEntry("available_features/monitoring", "");
             paramsConfig[NOTIFICATION_FEATURE_NAME] = config.getEntry("available_features/notification", "");
-            paramsConfig[AUTOMATION_FEATURE_NAME] = config.getEntry("available_features/automationSettings", "");
+            paramsConfig[AUTOMATION_SETTINGS] = config.getEntry("available_features/automationSettings", "");
             paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available_features/user-session", "");
             paramsConfig[DISCOVERY] = config.getEntry("available_features/discovery", "");
             paramsConfig[GENERAL_CONFIG] = config.getEntry("available_features/generalConfig", "");

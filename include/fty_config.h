@@ -44,7 +44,7 @@
 // Features definition
 #define MONITORING_FEATURE_NAME     "monitoring"
 #define NOTIFICATION_FEATURE_NAME   "notification"
-#define AUTOMATION_FEATURE_NAME     "automation-settings"
+#define AUTOMATION_SETTINGS         "automation-settings"
 #define USER_SESSION_FEATURE_NAME   "user-session"
 #define DISCOVERY                   "discovery"
 #define GENERAL_CONFIG              "general-config"
