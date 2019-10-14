@@ -1,0 +1,3 @@
+usr/include/*
+usr/lib/*/libfty_example.so
+usr/lib/*/pkgconfig/libfty_example.pc

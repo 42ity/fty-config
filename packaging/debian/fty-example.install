@@ -1,0 +1,4 @@
+usr/bin/fty-example
+etc/fty-example/fty-example.cfg
+lib/systemd/system/fty-example.service
+
