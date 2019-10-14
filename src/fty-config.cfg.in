@@ -14,10 +14,12 @@ srr-msg-bus
     queueName = ETN.Q.IPMCORE.CONFIG           # Srr queue name for all incoming request.
 
 srr_available_features
-    monitoring = /etc/fty-XXX/fty-XXX.cfg
+    monitoring = /etc/fty-nut/fty-nut.cfg
     notification = /etc/fty-email/fty-email.cfg
     automationSettings = /etc/etn-automation/etn-automation.cfg
     user-session = /etc/fty/fty-session.cfg
+    discovery = /etc/fty-discovery/fty-discovery.cfg
+    generalConfig = /etc/default/fty.cfg
     network = /etc/network/interfaces
 
 augeas

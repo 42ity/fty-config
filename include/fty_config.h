@@ -46,6 +46,10 @@
 #define NOTIFICATION_FEATURE_NAME   "notification"
 #define AUTOMATION_FEATURE_NAME     "automation-settings"
 #define USER_SESSION_FEATURE_NAME   "user-session"
+#define DISCOVERY                   "discovery"
+#define GENERAL_CONFIG              "general-config"
+#define NETWORK                     "network"
+
 // Augeas definition
 #define AUGEAS_LENS_PATH            "AugeasLensPath"
 #define AUGEAS_OPTIONS              "augeasOptions"

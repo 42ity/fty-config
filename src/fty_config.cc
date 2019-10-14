@@ -91,15 +91,19 @@ int main(int argc, char *argv [])
             }
         }
 
-        // Default configuration
+        // Default configuration.
         paramsConfig[ENDPOINT_KEY] = DEFAULT_ENDPOINT;
         paramsConfig[AGENT_NAME_KEY] = AGENT_NAME;
         paramsConfig[QUEUE_NAME_KEY] = MSG_QUEUE_NAME;
-        // Default path for augeas
-        paramsConfig[MONITORING_FEATURE_NAME] = "/etc/fty-XXX/fty-XXX.cfg";
+        // Default configuration files path.
+        paramsConfig[MONITORING_FEATURE_NAME] = "/etc/fty-nut/fty-nut.cfg";
         paramsConfig[NOTIFICATION_FEATURE_NAME] = "/etc/fty-email/fty-email.cfg";
         paramsConfig[AUTOMATION_FEATURE_NAME] = "/etc/etn-automation/etn-automation.cfg";
         paramsConfig[USER_SESSION_FEATURE_NAME] = "/etc/fty/fty-session.cfg";
+        paramsConfig[DISCOVERY] = "/etc/fty-discovery/fty-discovery.cfg";
+        paramsConfig[GENERAL_CONFIG] = "/etc/default/fty.cfg";
+        paramsConfig[NETWORK] = "/etc/network/interfaces";
+        // Default augeas configuration.
         paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
         paramsConfig[AUGEAS_OPTIONS] = AUG_NONE;
 
@@ -107,14 +111,18 @@ int main(int argc, char *argv [])
         {
             log_debug(AGENT_NAME ": loading configuration file from '%s' ...", config_file);
             mlm::ZConfig config(config_file);
-
+            // Message bus configuration.
             paramsConfig[ENDPOINT_KEY] = config.getEntry("srr-msg-bus/endpoint", DEFAULT_ENDPOINT);
             paramsConfig[QUEUE_NAME_KEY] = config.getEntry("srr-msg-bus/queueName", MSG_QUEUE_NAME);
-            
+            // Configuration file path
             paramsConfig[MONITORING_FEATURE_NAME] = config.getEntry("available_features/monitoring", "");
             paramsConfig[NOTIFICATION_FEATURE_NAME] = config.getEntry("available_features/notification", "");
             paramsConfig[AUTOMATION_FEATURE_NAME] = config.getEntry("available_features/automationSettings", "");
             paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available_features/user-session", "");
+            paramsConfig[DISCOVERY] = config.getEntry("available_features/discovery", "");
+            paramsConfig[GENERAL_CONFIG] = config.getEntry("available_features/generalConfig", "");
+            paramsConfig[NETWORK] = config.getEntry("available_features/network", "");
+            // Augeas configuration
             paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");
             paramsConfig[AUGEAS_OPTIONS] = config.getEntry("augeas/augeasOptions", "0");
         }
