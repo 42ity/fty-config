@@ -117,7 +117,9 @@ namespace config
             {
                 throw ConfigurationException("Empty request");
             }
-
+            // Load augeas for any request. 
+            aug_load(m_aug);
+            // Get the feature name.
             responseDto.featureName = configQuery.featureName;
             // Check if the command is implemented
             if (configQuery.action.compare(SAVE_ACTION) == 0)
