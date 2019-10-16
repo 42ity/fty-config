@@ -26,12 +26,18 @@
 @end
  */
 
+#include <iostream>
+#include <sstream>
+#include <vector>
+
 #include "fty_config_classes.h"
 
 using namespace std::placeholders;
 
 namespace config
 {
+    static const char FEATURE_SEPARATOR = ',';
+    
     /**
      * Constructor
      * @param parameters
@@ -106,16 +112,20 @@ namespace config
         dto::config::ConfigResponseDto responseDto("?", STATUS_FAILED);
         try
         {
-            log_debug("Config handleRequest:");
+            log_debug("Configuration handle request");
             messagebus::UserData data = msg.userData();
             dto::config::ConfigQueryDto configQuery;
             data >> configQuery;
 
-            log_debug("Config query: action:'%s', feature name:'%s'", configQuery.action.c_str(), configQuery.featureName.c_str());
+            log_debug("Config query-> action: %s, feature(s): %s", configQuery.action.c_str(), configQuery.featureName.c_str());
             
-            if (configQuery.action.size() == 0 || configQuery.featureName.size() == 0)
+            if (configQuery.action.size() == 0)
             {
-                throw ConfigurationException("Empty request");
+                if ((configQuery.action.compare(SAVE_ACTION) == 0 && configQuery.featureName.size() == 0) ||
+                    (configQuery.action.compare(RESTORE_ACTION) == 0 && configQuery.data.size() == 0))
+                {
+                    throw ConfigurationException("Empty request");
+                }
             }
             // Load augeas for any request. 
             aug_load(m_aug);
@@ -124,34 +134,50 @@ namespace config
             // Check if the command is implemented
             if (configQuery.action.compare(SAVE_ACTION) == 0)
             {
-                // Get the configuration file path name from class variable m_parameters
-                std::string configurationFileName = AUGEAS_FILES + m_parameters.at(responseDto.featureName) + ANY_NODES;
-                log_debug("Configuration file name '%s'", configurationFileName.c_str());
-                cxxtools::SerializationInfo si;
-                getConfigurationToJson(si, configurationFileName);
+                std::map<std::string, cxxtools::SerializationInfo> configSiList;
+                std::vector<std::string> featureList = splitString(configQuery.featureName);
+                for(auto const& feature: featureList)
+                {
+                    // Get the configuration file path name from class variable m_parameters
+                    std::string configurationFileName = AUGEAS_FILES + m_parameters.at(feature) + ANY_NODES;
+                    log_debug("Configuration file name: %s", configurationFileName.c_str());
+                    cxxtools::SerializationInfo si;
+                    getConfigurationToJson(si, configurationFileName);
+                    configSiList[feature] = si;
+                }
                 // Set response
-                setResponse(responseDto, si);
+                setResponse(configSiList, responseDto);
             } 
             else if (configQuery.action.compare(RESTORE_ACTION) == 0)
             {
-                std::string configurationFileName = AUGEAS_FILES + m_parameters.at(responseDto.featureName);
-                // Set all values for a feature name.
-                log_debug("Payload to set: %s", configQuery.data.c_str());
-                cxxtools::SerializationInfo si;
-                JSON::readFromString (configQuery.data, si);
-                // Test if the data is well formated
-                if (si.category () != cxxtools::SerializationInfo::Array ) 
-                {
-                    throw std::invalid_argument("Input datat must be an array");
-                }
-                // Iterate on array
+                // Get request and serialize it
+                cxxtools::SerializationInfo restoreSi;
+                JSON::readFromString(configQuery.data, restoreSi);
+                log_debug("Data to set: %s", configQuery.data.c_str());
+                
+                // Get data member
+                cxxtools::SerializationInfo siData = restoreSi.getMember(DATA_MEMBER);
                 cxxtools::SerializationInfo::Iterator it;
-                for (it = si.begin(); it != si.end(); ++it)
+                for (it = siData.begin(); it != siData.end(); ++it)
                 {
-                    for (auto &siFeature : (cxxtools::SerializationInfo)*it)
-                    {
-                        cxxtools::SerializationInfo siData = siFeature.getMember(DATA_MEMBER);
-                        int returnValue = setConfiguration(&siData, configurationFileName);
+
+                    //for (auto &siFeature : (cxxtools::SerializationInfo)*it)
+                    //{
+                        std::string featureName = it->begin()->name();//siFeature.name();
+                        // Set all values for a feature name.
+                        log_debug("Payload for: %s", featureName.c_str());
+                        
+                        std::string configurationFileName = AUGEAS_FILES + m_parameters.at(featureName);
+                        log_debug("Augeas configuration: %s", configurationFileName.c_str());
+                        
+                        //std::cout << "siFeature " << it->getMember(featureName).getMember(DATA_MEMBER) << std::endl;
+                        
+                        
+                        cxxtools::SerializationInfo az = it->getMember(featureName).getMember(DATA_MEMBER);
+                        
+                        
+                        
+                        int returnValue = 0;//setConfiguration(&az, configurationFileName);
                         if (returnValue == 0)
                         {
                             log_debug("Set configuration for: %s succeed!", responseDto.featureName.c_str());
@@ -162,10 +188,10 @@ namespace config
                             log_error(errorMsg.c_str());
                             responseDto.error= errorMsg;
                         }
-                    
-                    }
-                }
-            } else
+                    //}
+               }
+            } 
+            else
             {
                 throw ConfigurationException("Wrong command");
             }
@@ -190,29 +216,33 @@ namespace config
      * @param responseDto
      * @param configQuery
      */
-    void ConfigurationManager::setResponse (dto::config::ConfigResponseDto& respDto, const cxxtools::SerializationInfo& siInput)
+    void ConfigurationManager::setResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto)
     {
         // Array si
         cxxtools::SerializationInfo jsonResp;
         jsonResp.setCategory(cxxtools::SerializationInfo::Category::Array);
-        // Main si 
-        cxxtools::SerializationInfo si;
-        // Feature si
-        cxxtools::SerializationInfo siFeature;
-        siFeature.addMember(respDto.featureName);;
-        // Content si                
-        cxxtools::SerializationInfo siTemp;
-        siTemp.addMember(SRR_VERSION) <<= ACTIVE_VERSION;
-        cxxtools::SerializationInfo& siData = siTemp.addMember(DATA_MEMBER);
-        siData <<= siInput;
-        siData.setName(DATA_MEMBER);
-        // Add si version + datat in si feature
-        siFeature <<= siTemp;
-        siFeature.setName(respDto.featureName);
-        // Add the feature in the main si
-        si.addMember("") <<= siFeature;
-        // Put in the array
-        jsonResp.addMember("") <<= si;
+
+        for(auto const& configSi: configSiList)
+        {
+            cxxtools::SerializationInfo si;
+            si.setCategory(cxxtools::SerializationInfo::Category::Object);
+            // Feature si
+            cxxtools::SerializationInfo siFeature;
+            // Content si
+            cxxtools::SerializationInfo siTemp;
+            siTemp.addMember(SRR_VERSION) <<= ACTIVE_VERSION;
+            cxxtools::SerializationInfo& siData = siTemp.addMember(DATA_MEMBER);
+            siData <<= configSi.second;
+            siData.setName(DATA_MEMBER);
+            // Add si version + data in si feature
+            siFeature <<= siTemp;
+            siFeature.setName(configSi.first);
+            // Add the feature in the main si
+            si.addMember(configSi.first) <<= siFeature;
+            // Put in the array
+            jsonResp.addMember(configSi.first) <<= si;
+            
+        }
         // Serialize the response
         respDto.data = JSON::writeToString (jsonResp, false);
         respDto.status = STATUS_SUCCESS;
@@ -405,5 +435,21 @@ namespace config
             }
         }
         return returnValue;
+    }
+    
+    /**
+    * 
+    */
+    std::vector<std::string> ConfigurationManager::splitString(const std::string& inputString)
+    {
+        std::vector<std::string> result;
+        std::stringstream ss (inputString);
+        std::string item;
+        
+        while (std::getline(ss, item, FEATURE_SEPARATOR))
+        {
+            result.push_back(item);
+        }
+        return result;
     }
 }

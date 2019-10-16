@@ -56,13 +56,14 @@ namespace config
 
             std::string getConfigurationFileName (const std::string& featureName);
 
-            void setResponse (dto::config::ConfigResponseDto& respDto, const cxxtools::SerializationInfo& si);
+            void setResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto);
             void sendResponse(const messagebus::Message& msg, const dto::config::ConfigResponseDto& responseDto, const std::string& subject);
 
             // Utility
             void dumpConfiguration(std::string& path);
             std::string findMemberFromMatch(const std::string& input);
             int getAugeasFlags(std::string& augeasOpts);
+            std::vector<std::string> splitString(const std::string& inputString);
         };
         
 } // namespace config
