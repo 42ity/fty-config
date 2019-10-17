@@ -34,6 +34,7 @@ namespace config
     #define ANY_NODES           FILE_SEPARATOR "*"
     #define COMMENTS_DELIMITER  "#"
     #define AUGEAS_FILES        "/files"
+    #define FEATURE_SEPARATOR   ","
     
     class ConfigurationManager 
     {
@@ -56,8 +57,8 @@ namespace config
 
             std::string getConfigurationFileName (const std::string& featureName);
 
-            void setResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto);
-            void sendResponse(const messagebus::Message& msg, const dto::config::ConfigResponseDto& responseDto, const std::string& subject);
+            void setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto);
+            void sendResponse(const messagebus::Message& msg, const messagebus::UserData& userData, const std::string& subject);
 
             // Utility
             void dumpConfiguration(std::string& path);

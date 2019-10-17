@@ -32,12 +32,11 @@
 
 #include "fty_config_classes.h"
 
+
 using namespace std::placeholders;
 
 namespace config
-{
-    static const char FEATURE_SEPARATOR = ',';
-    
+{   
     /**
      * Constructor
      * @param parameters
@@ -109,32 +108,35 @@ namespace config
      */
     void ConfigurationManager::handleRequest(messagebus::Message msg)
     {
-        dto::config::ConfigResponseDto responseDto("?", STATUS_FAILED);
         try
         {
             log_debug("Configuration handle request");
+            
+            messagebus::UserData userData;
+            // Get request
             messagebus::UserData data = msg.userData();
             dto::config::ConfigQueryDto configQuery;
             data >> configQuery;
 
             log_debug("Config query-> action: %s, feature(s): %s", configQuery.action.c_str(), configQuery.featureName.c_str());
-            
             if (configQuery.action.size() == 0)
             {
                 if ((configQuery.action.compare(SAVE_ACTION) == 0 && configQuery.featureName.size() == 0) ||
                     (configQuery.action.compare(RESTORE_ACTION) == 0 && configQuery.data.size() == 0))
                 {
-                    throw ConfigurationException("Empty request");
+                    throw ConfigurationException("Request not valid");
                 }
             }
-            // Load augeas for any request. 
+            // Load augeas for any request (to avoid any cache).
             aug_load(m_aug);
-            // Get the feature name.
-            responseDto.featureName = configQuery.featureName;
+            
             // Check if the command is implemented
             if (configQuery.action.compare(SAVE_ACTION) == 0)
             {
+                // Response
+                dto::config::ConfigResponseDto respDto(configQuery.featureName, STATUS_FAILED);
                 std::map<std::string, cxxtools::SerializationInfo> configSiList;
+                // Split feature name 
                 std::vector<std::string> featureList = splitString(configQuery.featureName);
                 for(auto const& feature: featureList)
                 {
@@ -146,58 +148,50 @@ namespace config
                     configSiList[feature] = si;
                 }
                 // Set response
-                setResponse(configSiList, responseDto);
+                setSaveResponse(configSiList, respDto);
+                userData << respDto;
             } 
             else if (configQuery.action.compare(RESTORE_ACTION) == 0)
             {
+                // To store response
+                dto::srr::SrrRestoreDtoList srrRestoreDtoList(STATUS_SUCCESS); 
                 // Get request and serialize it
                 cxxtools::SerializationInfo restoreSi;
                 JSON::readFromString(configQuery.data, restoreSi);
-                log_debug("Data to set: %s", configQuery.data.c_str());
-                
                 // Get data member
                 cxxtools::SerializationInfo siData = restoreSi.getMember(DATA_MEMBER);
                 cxxtools::SerializationInfo::Iterator it;
                 for (it = siData.begin(); it != siData.end(); ++it)
                 {
-
-                    //for (auto &siFeature : (cxxtools::SerializationInfo)*it)
-                    //{
-                        std::string featureName = it->begin()->name();//siFeature.name();
-                        // Set all values for a feature name.
-                        log_debug("Payload for: %s", featureName.c_str());
-                        
-                        std::string configurationFileName = AUGEAS_FILES + m_parameters.at(featureName);
-                        log_debug("Augeas configuration: %s", configurationFileName.c_str());
-                        
-                        //std::cout << "siFeature " << it->getMember(featureName).getMember(DATA_MEMBER) << std::endl;
-                        
-                        
-                        cxxtools::SerializationInfo az = it->getMember(featureName).getMember(DATA_MEMBER);
-                        
-                        
-                        
-                        int returnValue = 0;//setConfiguration(&az, configurationFileName);
-                        if (returnValue == 0)
-                        {
-                            log_debug("Set configuration for: %s succeed!", responseDto.featureName.c_str());
-                            responseDto.status = STATUS_SUCCESS;
-                        } else
-                        {
-                            std::string errorMsg = "Set configuration for: " + responseDto.featureName + " failed!";
-                            log_error(errorMsg.c_str());
-                            responseDto.error= errorMsg;
-                        }
-                    //}
+                    dto::srr::SrrRestoreDto respDto(it->begin()->name(), STATUS_FAILED);
+                    // Build the augeas configuration file name.
+                    std::string configurationFileName = AUGEAS_FILES + m_parameters.at(respDto.name);
+                    log_debug("Restore configuration for: %s, with configuration file: %s", respDto.name.c_str(), configurationFileName.c_str());
+                    
+                    cxxtools::SerializationInfo siData = it->getMember(respDto.name).getMember(DATA_MEMBER);
+                    int returnValue = setConfiguration(&siData, configurationFileName);
+                    if (returnValue == 0)
+                    {
+                        log_debug("Restore configuration for: %s succeed!", respDto.name.c_str());
+                        respDto.status = STATUS_SUCCESS;
+                    } 
+                    else
+                    {
+                        std::string errorMsg = "Restore configuration for: " + respDto.name + " failed!";
+                        log_error(errorMsg.c_str());
+                        respDto.error= errorMsg;
+                        srrRestoreDtoList.status = STATUS_FAILED;
+                    }
+                    srrRestoreDtoList.responseList.push_back(respDto);
                }
+               userData << srrRestoreDtoList;
             } 
             else
             {
                 throw ConfigurationException("Wrong command");
             }
             // Send response
-            sendResponse(msg, responseDto, configQuery.action);
-
+            sendResponse(msg, userData, configQuery.action);
         } catch (const std::out_of_range& oor)
         {
             log_error("Feature name not found");
@@ -216,7 +210,7 @@ namespace config
      * @param responseDto
      * @param configQuery
      */
-    void ConfigurationManager::setResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto)
+    void ConfigurationManager::setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto)
     {
         // Array si
         cxxtools::SerializationInfo jsonResp;
@@ -241,7 +235,6 @@ namespace config
             si.addMember(configSi.first) <<= siFeature;
             // Put in the array
             jsonResp.addMember(configSi.first) <<= si;
-            
         }
         // Serialize the response
         respDto.data = JSON::writeToString (jsonResp, false);
@@ -254,12 +247,12 @@ namespace config
      * @param responseDto
      * @param configQuery
      */
-    void ConfigurationManager::sendResponse(const messagebus::Message& msg, const dto::config::ConfigResponseDto& responseDto, const std::string& subject)
+    void ConfigurationManager::sendResponse(const messagebus::Message& msg, const messagebus::UserData& userData, const std::string& subject)
     {
         try
         {
             messagebus::Message resp;
-            resp.userData() << responseDto;
+            resp.userData() = userData;
             resp.metaData().emplace(messagebus::Message::SUBJECT, subject);
             resp.metaData().emplace(messagebus::Message::FROM, m_parameters.at(AGENT_NAME_KEY));
             resp.metaData().emplace(messagebus::Message::TO, msg.metaData().find(messagebus::Message::FROM)->second);
@@ -438,15 +431,15 @@ namespace config
     }
     
     /**
-    * 
+    * Split a string from the token ','
     */
     std::vector<std::string> ConfigurationManager::splitString(const std::string& inputString)
     {
         std::vector<std::string> result;
-        std::stringstream ss (inputString);
+        std::stringstream ss(inputString);
         std::string item;
         
-        while (std::getline(ss, item, FEATURE_SEPARATOR))
+        while (std::getline(ss, item, FEATURE_SEPARATOR[0]))
         {
             result.push_back(item);
         }
