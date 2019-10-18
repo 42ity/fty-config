@@ -113,9 +113,9 @@ namespace config
         {
             log_debug("Configuration handle request");
             
-            messagebus::UserData userData;
+            dto::UserData userData;
             // Get request
-            messagebus::UserData data = msg.userData();
+            dto::UserData data = msg.userData();
             dto::config::ConfigQueryDto configQuery;
             data >> configQuery;
 
@@ -250,7 +250,7 @@ namespace config
      * @param responseDto
      * @param configQuery
      */
-    void ConfigurationManager::sendResponse(const messagebus::Message& msg, const messagebus::UserData& userData, const std::string& subject)
+    void ConfigurationManager::sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const std::string& subject)
     {
         try
         {

@@ -58,7 +58,7 @@ namespace config
             std::string getConfigurationFileName (const std::string& featureName);
 
             void setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto);
-            void sendResponse(const messagebus::Message& msg, const messagebus::UserData& userData, const std::string& subject);
+            void sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const std::string& subject);
 
             // Utility
             void dumpConfiguration(std::string& path);
