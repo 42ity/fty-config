@@ -102,7 +102,8 @@ int main(int argc, char *argv [])
         paramsConfig[USER_SESSION_FEATURE_NAME] = "/etc/fty/fty-session.cfg";
         paramsConfig[DISCOVERY] = "/etc/fty-discovery/fty-discovery.cfg";
         paramsConfig[GENERAL_CONFIG] = "/etc/default/fty.cfg";
-        paramsConfig[NETWORK] = "/etc/network/interfaces";
+        paramsConfig[NETWORK] = "/etc/network/interfaces.d/interfacesova.cfg";
+        //paramsConfig[NETWORK] = "/etc/network/interfaces";
         // Default augeas configuration.
         paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
         paramsConfig[AUGEAS_OPTIONS] = AUG_NONE;

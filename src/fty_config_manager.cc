@@ -78,6 +78,7 @@ namespace config
             log_debug("augeas options: %d", augeasOpt);
 
             m_aug = aug_init(FILE_SEPARATOR, m_parameters.at(AUGEAS_LENS_PATH).c_str(), augeasOpt);
+            //m_aug = aug_init(FILE_SEPARATOR, NULL, augeasOpt);
             if (!m_aug)
             {
                 throw ConfigurationException("Augeas tool initialization failed");
@@ -142,7 +143,9 @@ namespace config
                 {
                     // Get the configuration file path name from class variable m_parameters
                     std::string configurationFileName = AUGEAS_FILES + m_parameters.at(feature) + ANY_NODES;
+                    //std::string configurationFileName = "/files/etc/network/interfaces.d/interfacesova.cfg/iface[*]";
                     log_debug("Configuration file name: %s", configurationFileName.c_str());
+                    
                     cxxtools::SerializationInfo si;
                     getConfigurationToJson(si, configurationFileName);
                     configSiList[feature] = si;
@@ -304,8 +307,9 @@ namespace config
      */
     void ConfigurationManager::getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path)
     {
+        std::cout << "path " << path << std::endl; 
         char **matches;
-        int nmatches = aug_match(m_aug, path.c_str(), &matches);
+        int nmatches = aug_match(m_aug, path.c_str(), &matches); 
 
         // no matches, stop it.
         if (nmatches < 0) return;
@@ -314,21 +318,37 @@ namespace config
         for (int i = 0; i < nmatches; i++)
         {
             std::string temp = matches[i];
+            
             // Skip all comments
             if (temp.find(COMMENTS_DELIMITER) == std::string::npos)
             {
+                //std::cout << "pas de comments: " << std::endl;
+                //log_debug("");
                 const char *value, *label;
                 aug_get(m_aug, matches[i], &value);
+                //std::cout << "Value: " << value << std::endl;
                 aug_label(m_aug, matches[i], &label);
+                //std::cout << "value: " << value << std::endl;
+                //std::cout << "label: " << label << std::endl;
                 if (!value)
                 {
+                    //std::cout << "label " << label <<  std::endl;
                     // It's a member
                     si.addMember(label);
-                } else
+                } 
+                else
                 {
+                    std::cout << "temp: " << temp << std::endl;
                     std::string t = findMemberFromMatch(temp);
+                    std::cout << "t: " << t << std::endl;
+                    //std::cout << "findmember -> " << t << std::endl;
                     cxxtools::SerializationInfo *siTemp = si.findMember(t);
-                    siTemp->addMember(label) <<= value;
+                    if (siTemp)
+                    {
+                        //std::cout << "addember " << label << " " << value << std::endl;
+                        siTemp->addMember(label) <<= value;
+                        
+                    }
                 }
                 getConfigurationToJson(si, temp.append(ANY_NODES));
             }
@@ -338,7 +358,7 @@ namespace config
     /**
      * Find a member
      * @param input
-     * @return 
+     * @return siTemp
      */
     std::string ConfigurationManager::findMemberFromMatch(const std::string& input)
     {
