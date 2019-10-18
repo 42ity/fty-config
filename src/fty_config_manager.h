@@ -34,7 +34,6 @@ namespace config
     #define ANY_NODES           FILE_SEPARATOR "*"
     #define COMMENTS_DELIMITER  "#"
     #define AUGEAS_FILES        "/files"
-    #define FEATURE_SEPARATOR   ","
     
     class ConfigurationManager 
     {
@@ -64,7 +63,6 @@ namespace config
             void dumpConfiguration(std::string& path);
             std::string findMemberFromMatch(const std::string& input);
             int getAugeasFlags(std::string& augeasOpts);
-            std::vector<std::string> splitString(const std::string& inputString);
         };
         
 } // namespace config

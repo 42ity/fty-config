@@ -119,10 +119,10 @@ namespace config
             dto::config::ConfigQueryDto configQuery;
             data >> configQuery;
 
-            log_debug("Config query-> action: %s, feature(s): %s", configQuery.action.c_str(), configQuery.featureName.c_str());
+            log_debug("Config query-> action: %s", configQuery.action.c_str());
             if (configQuery.action.size() == 0)
             {
-                if ((configQuery.action.compare(SAVE_ACTION) == 0 && configQuery.featureName.size() == 0) ||
+                if ((configQuery.action.compare(SAVE_ACTION) == 0 && configQuery.features.size() == 0) ||
                     (configQuery.action.compare(RESTORE_ACTION) == 0 && configQuery.data.size() == 0))
                 {
                     throw ConfigurationException("Request not valid");
@@ -135,15 +135,12 @@ namespace config
             if (configQuery.action.compare(SAVE_ACTION) == 0)
             {
                 // Response
-                dto::config::ConfigResponseDto respDto(configQuery.featureName, STATUS_FAILED);
+                dto::config::ConfigResponseDto respDto(""/*configQuery.featureName*/, STATUS_FAILED);
                 std::map<std::string, cxxtools::SerializationInfo> configSiList;
-                // Split feature name 
-                std::vector<std::string> featureList = splitString(configQuery.featureName);
-                for(auto const& feature: featureList)
+                for(auto const& feature: configQuery.features)
                 {
                     // Get the configuration file path name from class variable m_parameters
                     std::string configurationFileName = AUGEAS_FILES + m_parameters.at(feature) + ANY_NODES;
-                    //std::string configurationFileName = "/files/etc/network/interfaces.d/interfacesova.cfg/iface[*]";
                     log_debug("Configuration file name: %s", configurationFileName.c_str());
                     
                     cxxtools::SerializationInfo si;
@@ -448,21 +445,5 @@ namespace config
             }
         }
         return returnValue;
-    }
-    
-    /**
-    * Split a string from the token ','
-    */
-    std::vector<std::string> ConfigurationManager::splitString(const std::string& inputString)
-    {
-        std::vector<std::string> result;
-        std::stringstream ss(inputString);
-        std::string item;
-        
-        while (std::getline(ss, item, FEATURE_SEPARATOR[0]))
-        {
-            result.push_back(item);
-        }
-        return result;
     }
 }
