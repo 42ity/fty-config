@@ -26,36 +26,36 @@
 #include "fty_config_library.h"
 
 //  Add your own public definitions here, if you need them
-#define AGENT_NAME_KEY              "agentName"
-#define AGENT_NAME                  "fty-config"
-#define ENDPOINT_KEY                "endPoint"
-#define DEFAULT_ENDPOINT            "ipc://@/malamute"
-#define CONFIG_DEFAULT_LOG_CONFIG   "/etc/fty/ftylog.cfg"
+constexpr auto AGENT_NAME_KEY            = "agentName";
+constexpr auto AGENT_NAME                = "fty-config";
+constexpr auto ENDPOINT_KEY              = "endPoint";
+constexpr auto DEFAULT_ENDPOINT          = "ipc://@/malamute";
+constexpr auto CONFIG_DEFAULT_LOG_CONFIG = "/etc/fty/ftylog.cfg";
 // Queue definition
-#define QUEUE_NAME_KEY              "queueName"
-#define MSG_QUEUE_NAME              "ETN.Q.IPMCORE.CONFIG"
+constexpr auto QUEUE_NAME_KEY            = "queueName";
+constexpr auto MSG_QUEUE_NAME            = "ETN.Q.IPMCORE.CONFIG";
 // Action definition
-#define SAVE_ACTION                 "save"
-#define RESTORE_ACTION              "restore"
-#define RESET_ACTION                "reset"
+constexpr auto SAVE_ACTION               = "save";
+constexpr auto RESTORE_ACTION            = "restore";
+constexpr auto RESET_ACTION              = "reset";
 // Status definition
-#define STATUS_SUCCESS              "success"
-#define STATUS_FAILED               "failed"
+constexpr auto STATUS_SUCCESS            = "success";
+constexpr auto STATUS_FAILED             = "failed";
 // Features definition
-#define MONITORING_FEATURE_NAME     "monitoring"
-#define NOTIFICATION_FEATURE_NAME   "notification"
-#define AUTOMATION_SETTINGS         "automation-settings"
-#define USER_SESSION_FEATURE_NAME   "user-session"
-#define DISCOVERY                   "discovery"
-#define GENERAL_CONFIG              "general-config"
-#define NETWORK                     "network"
+constexpr auto MONITORING_FEATURE_NAME   = "monitoring";
+constexpr auto NOTIFICATION_FEATURE_NAME = "notification";
+constexpr auto AUTOMATION_SETTINGS       = "automation-settings";
+constexpr auto USER_SESSION_FEATURE_NAME = "user-session";
+constexpr auto DISCOVERY                 = "discovery";
+constexpr auto GENERAL_CONFIG            = "general-config";
+constexpr auto NETWORK                   = "network";
 
 // Augeas definition
-#define AUGEAS_LENS_PATH            "AugeasLensPath"
-#define AUGEAS_OPTIONS              "augeasOptions"
+constexpr auto AUGEAS_LENS_PATH          = "AugeasLensPath";
+constexpr auto AUGEAS_OPTIONS            = "augeasOptions";
 // Properties definition
-#define SRR_VERSION                 "version"
-#define ACTIVE_VERSION              "1.0"
-#define DATA_MEMBER                 "data"
+constexpr auto SRR_VERSION               = "version";
+constexpr auto ACTIVE_VERSION            = "1.0";
+constexpr auto DATA_MEMBER               = "data";
 
 #endif

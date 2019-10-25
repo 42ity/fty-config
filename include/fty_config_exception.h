@@ -33,7 +33,7 @@ namespace config
       public:
         ConfigurationException(const std::string& what) : std::runtime_error(what) {}
         ConfigurationException(const char* what) : std::runtime_error(what) {}
-        ~ConfigurationException() = default;
+        virtual ~ConfigurationException() = default;
     };
 
 } // namepsace config

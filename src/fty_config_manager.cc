@@ -29,6 +29,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <list>
 
 #include "fty_config_classes.h"
 
@@ -53,17 +54,9 @@ namespace config
      */
     ConfigurationManager::~ConfigurationManager()
     {
-        log_debug("Release all config resources");
-        if (!m_aug)
-        {
-            aug_close(m_aug);
-            log_debug("Augeas resource released");
-        }
-        if (m_msgBus) 
-        {
-            delete m_msgBus;
-            log_debug("Message bus resource released");
-        }
+        aug_close(m_aug);
+        delete m_msgBus;
+        log_debug("All resources released");
     }
 
     /**
@@ -78,7 +71,6 @@ namespace config
             log_debug("augeas options: %d", augeasOpt);
 
             m_aug = aug_init(FILE_SEPARATOR, m_parameters.at(AUGEAS_LENS_PATH).c_str(), augeasOpt);
-            //m_aug = aug_init(FILE_SEPARATOR, NULL, augeasOpt);
             if (!m_aug)
             {
                 throw ConfigurationException("Augeas tool initialization failed");
@@ -120,10 +112,10 @@ namespace config
             data >> configQuery;
 
             log_debug("Config query-> action: %s", configQuery.action.c_str());
-            if (configQuery.action.size() == 0)
+            if (configQuery.action.empty())
             {
-                if ((configQuery.action.compare(SAVE_ACTION) == 0 && configQuery.features.size() == 0) ||
-                    (configQuery.action.compare(RESTORE_ACTION) == 0 && configQuery.data.size() == 0))
+                if ((configQuery.action == SAVE_ACTION && configQuery.features.empty()) ||
+                    (configQuery.action ==  RESTORE_ACTION && configQuery.data.empty()))
                 {
                     throw ConfigurationException("Request not valid");
                 }
@@ -132,7 +124,7 @@ namespace config
             aug_load(m_aug);
             
             // Check if the command is implemented
-            if (configQuery.action.compare(SAVE_ACTION) == 0)
+            if (configQuery.action == SAVE_ACTION)
             {
                 // Response
                 dto::config::ConfigResponseDto respDto(""/*configQuery.featureName*/, STATUS_FAILED);
@@ -151,7 +143,7 @@ namespace config
                 setSaveResponse(configSiList, respDto);
                 userData << respDto;
             } 
-            else if (configQuery.action.compare(RESTORE_ACTION) == 0)
+            else if (configQuery.action == RESTORE_ACTION)
             {
                 // To store response
                 dto::srr::SrrRestoreDtoList srrRestoreDtoList(STATUS_SUCCESS); 
@@ -179,7 +171,7 @@ namespace config
                     {
                         std::string errorMsg = "Restore configuration for: " + respDto.name + " failed!";
                         log_error(errorMsg.c_str());
-                        respDto.error= errorMsg;
+                        respDto.error = errorMsg;
                         srrRestoreDtoList.status = STATUS_FAILED;
                     }
                     srrRestoreDtoList.responseList.push_back(respDto);
@@ -319,32 +311,21 @@ namespace config
             // Skip all comments
             if (temp.find(COMMENTS_DELIMITER) == std::string::npos)
             {
-                //std::cout << "pas de comments: " << std::endl;
-                //log_debug("");
                 const char *value, *label;
                 aug_get(m_aug, matches[i], &value);
-                //std::cout << "Value: " << value << std::endl;
                 aug_label(m_aug, matches[i], &label);
-                //std::cout << "value: " << value << std::endl;
-                //std::cout << "label: " << label << std::endl;
                 if (!value)
                 {
-                    //std::cout << "label " << label <<  std::endl;
                     // It's a member
                     si.addMember(label);
                 } 
                 else
                 {
-                    std::cout << "temp: " << temp << std::endl;
                     std::string t = findMemberFromMatch(temp);
-                    std::cout << "t: " << t << std::endl;
-                    //std::cout << "findmember -> " << t << std::endl;
                     cxxtools::SerializationInfo *siTemp = si.findMember(t);
                     if (siTemp)
                     {
-                        //std::cout << "addember " << label << " " << value << std::endl;
                         siTemp->addMember(label) <<= value;
-                        
                     }
                 }
                 getConfigurationToJson(si, temp.append(ANY_NODES));
