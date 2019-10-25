@@ -121,8 +121,8 @@ int main(int argc, char *argv [])
     paramsConfig[USER_SESSION_FEATURE_NAME] = "/etc/fty/fty-session.cfg";
     paramsConfig[DISCOVERY] = "/etc/fty-discovery/fty-discovery.cfg";
     paramsConfig[GENERAL_CONFIG] = "/etc/default/fty.cfg";
-    paramsConfig[NETWORK] = "/etc/network/interfaces.d/interfacesova.cfg";
-    //paramsConfig[NETWORK] = "/etc/network/interfaces";
+    paramsConfig[NETWORK] = "/etc/network/interfaces";
+    paramsConfig[MASS_MANAGEMENT] = "/var/lib/fty/etn-mass-management/settings.cfg";
     // Default augeas configuration.
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
     paramsConfig[AUGEAS_OPTIONS] = AUG_NONE;
@@ -139,11 +139,12 @@ int main(int argc, char *argv [])
         // Configuration file path
         paramsConfig[MONITORING_FEATURE_NAME] = config.getEntry("available_features/monitoring", "");
         paramsConfig[NOTIFICATION_FEATURE_NAME] = config.getEntry("available_features/notification", "");
-        paramsConfig[AUTOMATION_SETTINGS] = config.getEntry("available_features/automationSettings", "");
+        paramsConfig[AUTOMATION_SETTINGS] = config.getEntry("available_features/automation-settings", "");
         paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available_features/user-session", "");
         paramsConfig[DISCOVERY] = config.getEntry("available_features/discovery", "");
-        paramsConfig[GENERAL_CONFIG] = config.getEntry("available_features/generalConfig", "");
+        paramsConfig[GENERAL_CONFIG] = config.getEntry("available_features/general-config", "");
         paramsConfig[NETWORK] = config.getEntry("available_features/network", "");
+        paramsConfig[NETWORK] = config.getEntry("available_features/etn-mass-management", "");
         // Augeas configuration
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");
         paramsConfig[AUGEAS_OPTIONS] = config.getEntry("augeas/augeasOptions", "0");
