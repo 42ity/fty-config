@@ -68,6 +68,12 @@ void terminateHandler()
     exit(EXIT_FAILURE);
 }
 
+/**
+ * Main program
+ * @param argc
+ * @param argv
+ * @return 
+ */
 int main(int argc, char *argv [])
 {
     using Parameters = std::map<std::string, std::string>;
