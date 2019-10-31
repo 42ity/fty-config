@@ -1,0 +1,28 @@
+#   fty-config configuration
+# This is a skeleton created by zproject.
+# You can add hand-written code here.
+
+server
+    timeout = 10000     #   Client connection timeout, msec
+    background = 0      #   Run as background process
+    workdir = .         #   Working directory for daemon
+    verbose = 0         #   Do verbose logging of activity?
+
+srr-msg-bus
+    endpoint = ipc://@/malamute             #   Malamute endpoint
+    address = srr-agent                     #   Agent address
+    queueName = ETN.Q.IPMCORE.CONFIG           # Srr queue name for all incoming request.
+
+srr_available_features
+    monitoring = /etc/fty-nut/fty-nut.cfg
+    notification = /etc/fty-email/fty-email.cfg
+    automation-settings = /etc/etn-automation/etn-automation.cfg
+    user-session = /etc/fty/fty-session.cfg
+    discovery = /etc/fty-discovery/fty-discovery.cfg
+    general-config = /etc/default/fty.cfg
+    network = /etc/network/interfaces
+    etn-mass-management = /var/lib/fty/etn-mass-management/settings.cfg
+
+augeas
+    lensPath = /usr/share/fty/lenses/
+    augeasOptions = AUG_NONE # Values availabes separate by '|' AUG_NONE AUG_TRACE_MODULE_LOADING AUG_SAVE_BACKUP

@@ -1,0 +1,29 @@
+Format: 3.0 (quilt)
+Binary: fty-config
+Source: fty-config
+Version: 1.0.0
+Maintainer: fty-config Developers <eatonipcopensource@eaton.com>
+Architecture: any
+Build-Depends: debhelper (>= 9),
+    pkg-config,
+    libaugeas-dev,
+    libxml-2.0-dev,
+    libsodium-dev,
+    libzmq3-dev,
+    libczmq-dev (>= 3.0.2),
+    libssl-dev,
+    libfty-common-dev,
+    libfty-common-mlm-dev,
+    libmlm-dev (>= 1.0.0),
+    liblog4cplus-dev,
+    libfty-common-logging-dev,
+    libcxxtools-dev,
+    libfty-common-messagebus-dev,
+    libfty-common-dto-dev,
+    systemd,
+    dh-systemd,
+    asciidoc-base | asciidoc, xmlto,
+    dh-autoreconf
+
+Files:
+ 7697688bf65a35bc33ae2db51ebb0e3b 818110 fty-config.tar.gz
