@@ -40,9 +40,8 @@ volatile bool g_exit = false;
 std::condition_variable g_cv;
 std::mutex g_cvMutex;
 
-void sigHandler(int )
+void sigHandler(int)
 {
-    log_debug("Interrupt signal");
     g_exit = true;
     g_cv.notify_one();
 }
