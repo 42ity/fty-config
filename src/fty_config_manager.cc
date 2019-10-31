@@ -285,6 +285,10 @@ namespace config
                 std::string fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
                 // Set value
                 int setReturn = aug_set(m_aug, fullPath.c_str(), elementValue.c_str());
+                if (setReturn == -1)
+                {
+                    log_error("Error to set the following values, %s = %s", fullPath.c_str(), elementValue.c_str());
+                }
             }
         }
         return aug_save(m_aug);
@@ -345,7 +349,7 @@ namespace config
         {
             // Try to find last /
             std::size_t found = input.find_last_of(FILE_SEPARATOR);
-            if (found != -1)
+            if (found != std::string::npos)
             {
                 std::string temp = input.substr(0, found);
                 found = temp.find_last_of(FILE_SEPARATOR);
