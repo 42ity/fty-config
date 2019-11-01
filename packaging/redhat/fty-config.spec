@@ -56,6 +56,9 @@ BuildRequires:  xmlto
 BuildRequires:  devtoolset-3-gcc devtoolset-3-gcc-c++
 BuildRequires:  gcc-c++ >= 4.9.0
 BuildRequires:  augeas-devel
+BuildRequires:  log4cplus-devel
+BuildRequires:  fty-common-logging-devel
+BuildRequires:  cxxtools-devel
 BuildRequires:  libsodium-devel
 BuildRequires:  zeromq-devel
 BuildRequires:  czmq-devel >= 3.0.2
@@ -63,9 +66,6 @@ BuildRequires:  malamute-devel >= 1.0.0
 BuildRequires:  openssl-devel
 BuildRequires:  fty-common-devel
 BuildRequires:  fty-common-mlm-devel
-BuildRequires:  log4cplus-devel
-BuildRequires:  fty-common-logging-devel
-BuildRequires:  cxxtools-devel
 BuildRequires:  fty-common-messagebus-devel
 BuildRequires:  fty-common-dto-devel
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
