@@ -186,43 +186,7 @@ default|default-Werror|default-with-docs|valgrind|clang-format-check)
            (command -v brew >/dev/null 2>&1 && brew ls --versions augeas >/dev/null 2>&1) \
     ; then
         echo ""
-        BASE_PWD=${PWD}
-        echo "`date`: INFO: Building prerequisite 'augeas' from Git repository..." >&2
-        cd ./tmp-deps
-        $CI_TIME git clone --quiet --depth 1 http://augeas.net/ augeas
-        cd ./augeas
-        CCACHE_BASEDIR=${PWD}
-        export CCACHE_BASEDIR
-        git --no-pager log --oneline -n1
-        if [ -e autogen.sh ]; then
-            $CI_TIME ./autogen.sh 2> /dev/null
-        fi
-        if [ -e buildconf ]; then
-            $CI_TIME ./buildconf 2> /dev/null
-        fi
-        if [ ! -e autogen.sh ] && [ ! -e buildconf ] && [ ! -e ./configure ] && [ -s ./configure.ac ]; then
-            $CI_TIME libtoolize --copy --force && \
-            $CI_TIME aclocal -I . && \
-            $CI_TIME autoheader && \
-            $CI_TIME automake --add-missing --copy && \
-            $CI_TIME autoconf || \
-            $CI_TIME autoreconf -fiv
-        fi
-        $CI_TIME ./configure "${CONFIG_OPTS[@]}"
-        $CI_TIME make -j4
-        $CI_TIME make install
-        cd "${BASE_PWD}"
-        CONFIG_OPTS+=("--with-augeas=yes")
-    else
-        CONFIG_OPTS+=("--with-augeas=yes")
-    fi
-
-    # Start of recipe for dependency: libxml-2.0
-    if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libxml-2.0-dev >/dev/null 2>&1) || \
-           (command -v brew >/dev/null 2>&1 && brew ls --versions libxml-2.0 >/dev/null 2>&1) \
-    ; then
-        echo ""
-        echo "WARNING: Can not build prerequisite 'libxml-2.0'" >&2
+        echo "WARNING: Can not build prerequisite 'augeas'" >&2
         echo "because neither tarball nor repository sources are known for it," >&2
         echo "and it was not installed as a package; this may cause the test to fail!" >&2
     fi
@@ -326,6 +290,39 @@ default|default-Werror|default-with-docs|valgrind|clang-format-check)
         cd "${BASE_PWD}"
     fi
 
+    # Start of recipe for dependency: malamute
+    if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libmlm-dev >/dev/null 2>&1) || \
+           (command -v brew >/dev/null 2>&1 && brew ls --versions malamute >/dev/null 2>&1) \
+    ; then
+        echo ""
+        BASE_PWD=${PWD}
+        echo "`date`: INFO: Building prerequisite 'malamute' from Git repository..." >&2
+        cd ./tmp-deps
+        $CI_TIME git clone --quiet --depth 1 -b 1.0-FTY-master https://github.com/42ity/malamute.git malamute
+        cd ./malamute
+        CCACHE_BASEDIR=${PWD}
+        export CCACHE_BASEDIR
+        git --no-pager log --oneline -n1
+        if [ -e autogen.sh ]; then
+            $CI_TIME ./autogen.sh 2> /dev/null
+        fi
+        if [ -e buildconf ]; then
+            $CI_TIME ./buildconf 2> /dev/null
+        fi
+        if [ ! -e autogen.sh ] && [ ! -e buildconf ] && [ ! -e ./configure ] && [ -s ./configure.ac ]; then
+            $CI_TIME libtoolize --copy --force && \
+            $CI_TIME aclocal -I . && \
+            $CI_TIME autoheader && \
+            $CI_TIME automake --add-missing --copy && \
+            $CI_TIME autoconf || \
+            $CI_TIME autoreconf -fiv
+        fi
+        $CI_TIME ./configure "${CONFIG_OPTS[@]}"
+        $CI_TIME make -j4
+        $CI_TIME make install
+        cd "${BASE_PWD}"
+    fi
+
     # Start of recipe for dependency: openssl
     if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libssl-dev >/dev/null 2>&1) || \
            (command -v brew >/dev/null 2>&1 && brew ls --versions openssl >/dev/null 2>&1) \
@@ -379,39 +376,6 @@ default|default-Werror|default-with-docs|valgrind|clang-format-check)
         cd ./tmp-deps
         $CI_TIME git clone --quiet --depth 1 -b master https://github.com/42ity/fty-common-mlm.git fty-common-mlm
         cd ./fty-common-mlm
-        CCACHE_BASEDIR=${PWD}
-        export CCACHE_BASEDIR
-        git --no-pager log --oneline -n1
-        if [ -e autogen.sh ]; then
-            $CI_TIME ./autogen.sh 2> /dev/null
-        fi
-        if [ -e buildconf ]; then
-            $CI_TIME ./buildconf 2> /dev/null
-        fi
-        if [ ! -e autogen.sh ] && [ ! -e buildconf ] && [ ! -e ./configure ] && [ -s ./configure.ac ]; then
-            $CI_TIME libtoolize --copy --force && \
-            $CI_TIME aclocal -I . && \
-            $CI_TIME autoheader && \
-            $CI_TIME automake --add-missing --copy && \
-            $CI_TIME autoconf || \
-            $CI_TIME autoreconf -fiv
-        fi
-        $CI_TIME ./configure "${CONFIG_OPTS[@]}"
-        $CI_TIME make -j4
-        $CI_TIME make install
-        cd "${BASE_PWD}"
-    fi
-
-    # Start of recipe for dependency: malamute
-    if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libmlm-dev >/dev/null 2>&1) || \
-           (command -v brew >/dev/null 2>&1 && brew ls --versions malamute >/dev/null 2>&1) \
-    ; then
-        echo ""
-        BASE_PWD=${PWD}
-        echo "`date`: INFO: Building prerequisite 'malamute' from Git repository..." >&2
-        cd ./tmp-deps
-        $CI_TIME git clone --quiet --depth 1 -b 1.0-FTY-master https://github.com/42ity/malamute.git malamute
-        cd ./malamute
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
         git --no-pager log --oneline -n1

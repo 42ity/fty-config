@@ -47,15 +47,15 @@ systemdsystemunit_DATA =
 endif #WITH_SYSTEMD_UNITS
 
 if ENABLE_FTY_CONFIG
-bin_PROGRAMS += src/fty-config
+bin_PROGRAMS += src/fty_config
 src_fty_config_CPPFLAGS = ${AM_CPPFLAGS}
 src_fty_config_LDADD = ${program_libs}
 src_fty_config_SOURCES = src/fty_config.cc
 src_fty_config_config_DATA =
-src_fty_config_config_DATA += src/fty-config.cfg
+src_fty_config_config_DATA += src/fty_config.cfg
 src_fty_config_configdir = $(sysconfdir)/fty-config
 if WITH_SYSTEMD_UNITS
-systemdsystemunit_DATA += src/fty-config.service
+systemdsystemunit_DATA += src/fty_config.service
 endif #WITH_SYSTEMD_UNITS
 endif #ENABLE_FTY_CONFIG
 
@@ -69,7 +69,7 @@ endif #ENABLE_FTY_CONFIG_SELFTEST
 
 # define custom target for all products of /src
 src: \
-		src/fty-config \
+		src/fty_config \
 		src/fty_config_selftest \
 		src/libfty_config.la
 

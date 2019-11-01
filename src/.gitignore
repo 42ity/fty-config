@@ -9,10 +9,10 @@ libfty_config.pc
 # + main->extra sources (if any):
 
 # + config files for mains (if any):
-fty-config.cfg
+fty_config.cfg
 
 # + systemd service unit for daemons (if any):
-fty-config.service
+fty_config.service
 
 # location designated for writing self-tests:
 selftest-rw/

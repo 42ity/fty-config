@@ -56,14 +56,13 @@ BuildRequires:  xmlto
 BuildRequires:  devtoolset-3-gcc devtoolset-3-gcc-c++
 BuildRequires:  gcc-c++ >= 4.9.0
 BuildRequires:  augeas-devel
-BuildRequires:  libxml-2.0-devel
 BuildRequires:  libsodium-devel
 BuildRequires:  zeromq-devel
 BuildRequires:  czmq-devel >= 3.0.2
+BuildRequires:  malamute-devel >= 1.0.0
 BuildRequires:  openssl-devel
 BuildRequires:  fty-common-devel
 BuildRequires:  fty-common-mlm-devel
-BuildRequires:  malamute-devel >= 1.0.0
 BuildRequires:  log4cplus-devel
 BuildRequires:  fty-common-logging-devel
 BuildRequires:  cxxtools-devel
@@ -74,17 +73,17 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %description
 fty-config configuration agent for 42ity ecosystem.
 
-%package -n libfty_config0
+%package -n libfty_config1
 Group:          System/Libraries
 Summary:        configuration agent for 42ity ecosystem shared library
 
-%description -n libfty_config0
+%description -n libfty_config1
 This package contains shared library for fty-config: configuration agent for 42ity ecosystem
 
-%post -n libfty_config0 -p /sbin/ldconfig
-%postun -n libfty_config0 -p /sbin/ldconfig
+%post -n libfty_config1 -p /sbin/ldconfig
+%postun -n libfty_config1 -p /sbin/ldconfig
 
-%files -n libfty_config0
+%files -n libfty_config1
 %defattr(-,root,root)
 %{_libdir}/libfty_config.so.*
 
@@ -94,7 +93,7 @@ This package contains shared library for fty-config: configuration agent for 42i
 
 %build
 sh autogen.sh
-%{configure} --enable-drafts=%{DRAFTS} --with-systemd-units --with-augeas=yes
+%{configure} --enable-drafts=%{DRAFTS} --with-systemd-units
 make %{_smp_mflags}
 
 %install
@@ -107,18 +106,18 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %files
 %defattr(-,root,root)
 %doc README.md
-%{_bindir}/fty-config
-%{_mandir}/man1/fty-config*
-%config(noreplace) %{_sysconfdir}/fty-config/fty-config.cfg
-%{SYSTEMD_UNIT_DIR}/fty-config.service
+%{_bindir}/fty_config
+%{_mandir}/man1/fty_config*
+%config(noreplace) %{_sysconfdir}/fty-config/fty_config.cfg
+%{SYSTEMD_UNIT_DIR}/fty_config.service
 %dir %{_sysconfdir}/fty-config
 %if 0%{?suse_version} > 1315
 %post
-%systemd_post fty-config.service
+%systemd_post fty_config.service
 %preun
-%systemd_preun fty-config.service
+%systemd_preun fty_config.service
 %postun
-%systemd_postun_with_restart fty-config.service
+%systemd_postun_with_restart fty_config.service
 %endif
 
 %changelog

@@ -8,22 +8,31 @@
     repository = "https://github.com/42ity/fty-config"
     >
 
+    <!-- Here we define for which package type we want to get a package -->
     <target name = "debian" />
     <target name = "redhat" />
+
+    <!-- Here we define necessary steps for travis -->
     <target name = "travis" >
-        <!-- option name = "clangformat_implem" value = "autotools" / -->
+        <!-- option name = "clangformat_implem" value = "autotools" / -->l
         <option name = "use_cmake" value = "0" />
+        <option name = "dist" value = "trusty" />
+        <option name = "shadow_gcc" value = "2" />
         <!-- option name = "clangformat_require_good" value = "1" / -->
         <option name = "clangformat_allow_failures" value = "1" />
         <option name = "use_pkg_deps_prereqs_source" value = "0" />
+        <option name = "test_memcheck" value = "0" />
         <option name = "require_gitignore" value = "1" />
     </target>
+
+    <!-- Here we define necessary steps for jenkins -->
     <target name = "jenkins" >
         <option name = "agent_label" value = "devel-image &amp;&amp; x86_64" />
         <option name = "triggers_pollSCM" value = "H/2 * * * *" />
         <option name = "test_cppcheck" value = "1" />
         <option name = "build_docs" value = "1" />
         <option name = "dist_docs" value = "1" />
+        <option name = "test_memcheck" value = "0" />
 
         <!-- Try to avoid avalanche rebuilds of same code on our CI -->
         <option name = "use_earlymilestone" value = "1" />
@@ -31,20 +40,23 @@
         <option name = "use_build_nonconcurrent" value = "1" />
         <option name = "use_checkout_explicit" value = "1" />
     </target>
-    
-    <classfilename use-cxx-gcc-4-9 = "true"/>
 
+    <!-- Here we define the license file -->
     <include filename = "license.xml" />
     <version major = "1" minor = "0" patch = "0" />
-    <abi current = "0" revision = "0" age = "0" />
+    <abi current = "1" revision = "0" age = "0" />
+
+    <!-- Here we enable c++ -->
+    <classfilename use-cxx = "true" source-extension = "cc" header-extension = "h" use-cxx-gcc-4-9 = "true"
+        pretty-print = "no" keep-tree = "true" />
     
     <!-- Augeas -->
-    <use project = "augeas" header = "stdio.h" optional="1"
-         repository = "http://augeas.net/"
-         debian_name = "libaugeas-dev"/>
+    <use project = "augeas" header = "augeas.h" debian_name = "libaugeas-dev"/>
+
     <!-- Transitivity augeas dependency -->
-    <use project = "libxml-2.0" header ="libxml/xmlversion.h"/>
+    <!--<use project = "libxml-2.0" header ="libxml/xmlversion.h"/>-->
    
+   <!-- use fty-common-mlm -->
     <use project = "fty-common-mlm" libname = "libfty_common_mlm" header = "fty_common_mlm.h"
         repository = "https://github.com/42ity/fty-common-mlm.git"
         release = "master"
@@ -124,16 +136,18 @@
             />
     </use>
     
+    <!-- use cxxtools -->
     <use project = "cxxtools" test = "cxxtools::Utf8Codec::Utf8Codec" header = "cxxtools/allocator.h"
             repository = "https://github.com/42ity/cxxtools.git"
             release = "2.2-FTY-master" />
 
-
+    <!-- use fty-common-messagebus -->
     <use project = "fty-common-messagebus" libname = "libfty_common_messagebus" header = "fty_common_messagebus.h"
         repository = "https://github.com/42ity/fty-common-messagebus.git"
         release = "master"
         test = "fty_common_messagebus_selftest" />
     
+    <!-- use fty-common-dto -->
     <use project = "fty-common-dto" libname = "libfty_common_dto" header = "fty_common_dto.h"
         repository = "https://github.com/42ity/fty-common-dto.git"
         release = "master"
@@ -141,7 +155,7 @@
 
     <!-- Project -->
     <header name ="fty_config_exception">Fty configuration exceptions</header>
-    <class name = "fty-config-manager" private = "1" selftest = "0">Fty config manager</class>
-    <main name = "fty-config" service = "1">Fty config Binary</main>
+    <class name = "fty_config_manager" private = "1" selftest = "0">Fty config manager</class>
+    <main name = "fty_config" service = "1">Fty config Binary</main>
 
 </project>
