@@ -63,11 +63,11 @@ pkg_deps_prereqs_source: &pkg_deps_prereqs_source
     - log4cplus-dev
     - libfty-common-logging-dev
     - cxxtools-dev
+    - libfty-common-dev
     - libsodium-dev
     - libzmq3-dev
     - libczmq-dev
     - libmlm-dev
-    - libfty-common-dev
     - libfty-common-mlm-dev
     - libfty-common-messagebus-dev
     - libfty-common-dto-dev
