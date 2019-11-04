@@ -30,6 +30,8 @@
 #include <sstream>
 #include <vector>
 #include <list>
+#include <regex>
+
 
 #include "fty_config_classes.h"
 
@@ -37,7 +39,9 @@
 using namespace std::placeholders;
 
 namespace config
-{   
+{
+    const static std::regex augeasArrayregex("(\\w+\\[.*\\])$");
+    
     /**
      * Constructor
      * @param parameters
@@ -300,7 +304,8 @@ namespace config
      */
     void ConfigurationManager::getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path)
     {
-        std::cout << "path " << path << std::endl; 
+        std::smatch arrayMatch;
+        
         char **matches;
         int nmatches = aug_match(m_aug, path.c_str(), &matches); 
 
@@ -311,7 +316,6 @@ namespace config
         for (int i = 0; i < nmatches; i++)
         {
             std::string temp = matches[i];
-            
             // Skip all comments
             if (temp.find(COMMENTS_DELIMITER) == std::string::npos)
             {
@@ -320,9 +324,14 @@ namespace config
                 aug_label(m_aug, matches[i], &label);
                 if (!value)
                 {
-                    // It's a member
+                    // If the value is null, it's a sheet, so it's a member.
                     si.addMember(label);
-                } 
+                }
+                else if (regex_search(temp, arrayMatch, augeasArrayregex) == true && arrayMatch.str(1).length() > 0)
+                {
+                    // In an array case, it's member too.
+                    si.addMember(arrayMatch.str(1));
+                }
                 else
                 {
                     std::string t = findMemberFromMatch(temp);
