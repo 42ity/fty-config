@@ -23,6 +23,10 @@
 #define FTY_CONFIG_MANAGER_H_INCLUDED
 
 #include <augeas.h>
+#include <cxxtools/serializationinfo.h>
+
+#include <map>
+#include <string>
 
 /**
  * \brief Agent config server actor

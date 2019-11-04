@@ -30,15 +30,11 @@
 //  Set up environment for the application
 
 //  External dependencies
-#if defined (HAVE_AUGEAS)
-#include <stdio.h>
-#endif
-#include <libxml/xmlversion.h>
-#include <czmq.h>
-#include <fty_common_mlm.h>
-#include <malamute.h>
-#include <fty-log/fty_logger.h>
+#include <augeas.h>
+#include <fty_log.h>
 #include <cxxtools/allocator.h>
+#include <fty_common.h>
+#include <fty_common_mlm.h>
 #include <fty_common_messagebus.h>
 #include <fty_common_dto.h>
 
@@ -51,6 +47,26 @@
     ((major) * 10000 + (minor) * 100 + (patch))
 #define FTY_CONFIG_VERSION \
     FTY_CONFIG_MAKE_VERSION(FTY_CONFIG_VERSION_MAJOR, FTY_CONFIG_VERSION_MINOR, FTY_CONFIG_VERSION_PATCH)
+
+// czmq_prelude.h bits
+#if !defined (__WINDOWS__)
+#   if (defined WIN32 || defined _WIN32 || defined WINDOWS || defined _WINDOWS)
+#       undef __WINDOWS__
+#       define __WINDOWS__
+#   endif
+#endif
+
+// Windows MSVS doesn't have stdbool
+#if (defined (_MSC_VER) && !defined (true))
+#   if (!defined (__cplusplus) && (!defined (true)))
+#       define true 1
+#       define false 0
+        typedef char bool;
+#   endif
+#else
+#   include <stdbool.h>
+#endif
+// czmq_prelude.h bits
 
 #if defined (__WINDOWS__)
 #   if defined FTY_CONFIG_STATIC
