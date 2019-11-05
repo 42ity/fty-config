@@ -40,7 +40,7 @@ using namespace std::placeholders;
 
 namespace config
 {
-    const static std::regex augeasArrayregex("(\\w+\\[.*\\])$");
+    const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
     
     /**
      * Constructor
