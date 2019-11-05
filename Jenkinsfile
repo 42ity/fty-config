@@ -1,5 +1,5 @@
 /*
-    fty-example - Example agent for 42ITy ecosystem
+    fty-config - Configuration agent for 42ITy ecosystem
 
     Copyright (C) 2014 - 2018 Eaton
 
@@ -73,7 +73,7 @@ pipeline {
             description: 'Attempt "make check" in this run?',
             name: 'DO_TEST_CHECK')
         booleanParam (
-            defaultValue: true,
+            defaultValue: false,
             description: 'Attempt "make memcheck" in this run?',
             name: 'DO_TEST_MEMCHECK')
         booleanParam (

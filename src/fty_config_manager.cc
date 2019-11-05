@@ -35,8 +35,11 @@
 
 #include "fty_config_classes.h"
 
+#include <fty_common_json.h>
+
 
 using namespace std::placeholders;
+using namespace JSON;
 
 namespace config
 {
@@ -153,7 +156,7 @@ namespace config
                 dto::srr::SrrRestoreDtoList srrRestoreDtoList(STATUS_SUCCESS); 
                 // Get request and serialize it
                 cxxtools::SerializationInfo restoreSi;
-                JSON::readFromString(configQuery.data, restoreSi);
+                readFromString(configQuery.data, restoreSi);
                 // Get data member
                 cxxtools::SerializationInfo siData = restoreSi.getMember(DATA_MEMBER);
                 cxxtools::SerializationInfo::Iterator it;
@@ -233,7 +236,7 @@ namespace config
             jsonResp.addMember(configSi.first) <<= si;
         }
         // Serialize the response
-        respDto.data = JSON::writeToString (jsonResp, false);
+        respDto.data = writeToString (jsonResp, false);
         respDto.status = STATUS_SUCCESS;
     }
     

@@ -1,4 +1,4 @@
-usr/bin/fty-config
-etc/fty-config/fty-config.cfg
-lib/systemd/system/fty-config.service
+usr/bin/fty_config
+etc/fty-config/fty_config.cfg
+lib/systemd/system/fty_config.service
 
