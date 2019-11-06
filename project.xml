@@ -49,7 +49,7 @@
     <!-- Here we enable c++ -->
     <classfilename use-cxx = "true" source-extension = "cc" header-extension = "h" use-cxx-gcc-4-9 = "true"
         pretty-print = "no" keep-tree = "true" />
-    
+
     <!-- Augeas -->
     <use project = "augeas" header = "augeas.h" debian_name = "libaugeas-dev"/>
 
@@ -66,11 +66,12 @@
     </use>
 
     <!-- use cxxtools -->
-    <use project = "cxxtools" test = "cxxtools::Utf8Codec::Utf8Codec" header = "cxxtools/allocator.h"
+    <use project = "cxxtools"
+            test = "cxxtools::Utf8Codec::Utf8Codec"
+            header = "cxxtools/allocator.h"
             repository = "https://github.com/42ity/cxxtools.git"
             release = "2.2-FTY-master" />
-   
-    
+
     <!-- fty-common -->
     <use project = "fty-common" libname = "libfty_common" header = "fty_common.h"
         repository = "https://github.com/42ity/fty-common.git"
@@ -88,7 +89,7 @@
                 />
         </use>
     </use>
-    
+
     <!-- fty-commom-mlm -->
     <use project = "fty-common-mlm" libname = "libfty_common_mlm" header = "fty_common_mlm.h"
         repository = "https://github.com/42ity/fty-common-mlm.git"
@@ -201,7 +202,7 @@
                 />
         </use>
     </use>
-    
+
     <!-- use fty-common-dto -->
     <use project = "fty-common-dto" libname = "libfty_common_dto" header = "fty_common_dto.h"
         repository = "https://github.com/42ity/fty-common-dto.git"
