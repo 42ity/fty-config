@@ -30,36 +30,31 @@
 #include <sstream>
 #include <vector>
 #include <list>
+#include <regex>
+
 
 #include "fty_config_classes.h"
 
 #include <fty_common_json.h>
+#include <memory>
 
 
 using namespace std::placeholders;
 using namespace JSON;
 
 namespace config
-{   
+{
+    const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
+    
     /**
      * Constructor
      * @param parameters
      * @param streamPublisher
      */
     ConfigurationManager::ConfigurationManager(const std::map<std::string, std::string> & parameters)
-    : m_parameters(parameters), m_aug(NULL)
+    : m_parameters(parameters), m_aug(nullptr, aug_close)
     {
         init();
-    }
-
-    /**
-     * Destructor
-     */
-    ConfigurationManager::~ConfigurationManager()
-    {
-        aug_close(m_aug);
-        delete m_msgBus;
-        log_debug("All resources released");
     }
 
     /**
@@ -73,14 +68,14 @@ namespace config
             int augeasOpt = getAugeasFlags(m_parameters.at(AUGEAS_OPTIONS));
             log_debug("augeas options: %d", augeasOpt);
 
-            m_aug = aug_init(FILE_SEPARATOR, m_parameters.at(AUGEAS_LENS_PATH).c_str(), augeasOpt);
+            m_aug = AugeasSmartPtr(aug_init(FILE_SEPARATOR, m_parameters.at(AUGEAS_LENS_PATH).c_str(), augeasOpt), aug_close);
             if (!m_aug)
             {
                 throw ConfigurationException("Augeas tool initialization failed");
             }
 
             // Message bus init
-            m_msgBus = messagebus::MlmMessageBus(m_parameters.at(ENDPOINT_KEY), m_parameters.at(AGENT_NAME_KEY));
+            m_msgBus = std::unique_ptr<messagebus::MessageBus>(messagebus::MlmMessageBus(m_parameters.at(ENDPOINT_KEY), m_parameters.at(AGENT_NAME_KEY)));
             m_msgBus->connect();
             
             // Listen all incoming request
@@ -93,6 +88,27 @@ namespace config
         } catch (...)
         {
             log_error("Unexpected error: unknown");
+        }
+    }
+
+    /**
+     * Test if request is valid
+     * @param configQuery
+     */
+    void ConfigurationManager::checkRequest(const dto::config::ConfigQueryDto& configQuery)
+    {
+        log_debug("Config query-> action: %s", configQuery.action.c_str());
+        if (configQuery.action.empty())
+        {
+            throw ConfigurationException("Request action empty");
+        }
+        else
+        {
+            if ((configQuery.action == SAVE_ACTION && configQuery.features.empty()) ||
+                (configQuery.action ==  RESTORE_ACTION && configQuery.data.empty()))
+            {
+                throw ConfigurationException("Request action not valid");
+            }
         }
     }
 
@@ -113,18 +129,10 @@ namespace config
             dto::UserData data = msg.userData();
             dto::config::ConfigQueryDto configQuery;
             data >> configQuery;
-
-            log_debug("Config query-> action: %s", configQuery.action.c_str());
-            if (configQuery.action.empty())
-            {
-                if ((configQuery.action == SAVE_ACTION && configQuery.features.empty()) ||
-                    (configQuery.action ==  RESTORE_ACTION && configQuery.data.empty()))
-                {
-                    throw ConfigurationException("Request not valid");
-                }
-            }
+            // Check the request, if not valid throw ConfigurationException
+            checkRequest(configQuery);
             // Load augeas for any request (to avoid any cache).
-            aug_load(m_aug);
+            aug_load(m_aug.get());
             
             // Check if the command is implemented
             if (configQuery.action == SAVE_ACTION)
@@ -287,14 +295,14 @@ namespace config
                 // Build augeas full path
                 std::string fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
                 // Set value
-                int setReturn = aug_set(m_aug, fullPath.c_str(), elementValue.c_str());
+                int setReturn = aug_set(m_aug.get(), fullPath.c_str(), elementValue.c_str());
                 if (setReturn == -1)
                 {
                     log_error("Error to set the following values, %s = %s", fullPath.c_str(), elementValue.c_str());
                 }
             }
         }
-        return aug_save(m_aug);
+        return aug_save(m_aug.get());
     }
 
     /**
@@ -303,9 +311,10 @@ namespace config
      */
     void ConfigurationManager::getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path)
     {
-        std::cout << "path " << path << std::endl; 
+        std::smatch arrayMatch;
+        
         char **matches;
-        int nmatches = aug_match(m_aug, path.c_str(), &matches); 
+        int nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
         // no matches, stop it.
         if (nmatches < 0) return;
@@ -314,18 +323,22 @@ namespace config
         for (int i = 0; i < nmatches; i++)
         {
             std::string temp = matches[i];
-            
             // Skip all comments
             if (temp.find(COMMENTS_DELIMITER) == std::string::npos)
             {
                 const char *value, *label;
-                aug_get(m_aug, matches[i], &value);
-                aug_label(m_aug, matches[i], &label);
+                aug_get(m_aug.get(), matches[i], &value);
+                aug_label(m_aug.get(), matches[i], &label);
                 if (!value)
                 {
-                    // It's a member
+                    // If the value is null, it's a sheet, so it's a member.
                     si.addMember(label);
-                } 
+                }
+                else if (regex_search(temp, arrayMatch, augeasArrayregex) == true && arrayMatch.str(1).length() > 0)
+                {
+                    // In an array case, it's member too.
+                    si.addMember(arrayMatch.str(1));
+                }
                 else
                 {
                     std::string t = findMemberFromMatch(temp);
@@ -369,7 +382,7 @@ namespace config
     void ConfigurationManager::dumpConfiguration(std::string& path)
     {
         char **matches;
-        int nmatches = aug_match(m_aug, path.c_str(), &matches);
+        int nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
         // Stop if not matches.
         if (nmatches < 0) return;
@@ -382,8 +395,8 @@ namespace config
             if (temp.find(COMMENTS_DELIMITER) == std::string::npos)
             {
                 const char *value, *label;
-                aug_get(m_aug, matches[i], &value);
-                aug_label(m_aug, matches[i], &label);
+                aug_get(m_aug.get(), matches[i], &value);
+                aug_label(m_aug.get(), matches[i], &label);
                 dumpConfiguration(temp.append(ANY_NODES));
             }
         }

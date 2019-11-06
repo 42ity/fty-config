@@ -44,16 +44,19 @@ namespace config
 
         public:
             explicit ConfigurationManager(const std::map<std::string, std::string> & parameters);
-            ~ConfigurationManager();
+            ~ConfigurationManager() = default;
 
         private:
 
             std::map<std::string, std::string> m_parameters;
-            augeas *m_aug;
-            messagebus::MessageBus *m_msgBus;
+            using AugeasSmartPtr = std::unique_ptr<augeas, decltype(&aug_close)>;
+            AugeasSmartPtr m_aug;
+            std::unique_ptr<messagebus::MessageBus> m_msgBus;
 
             void init();
             void handleRequest(messagebus::Message msg);
+            void checkRequest(const dto::config::ConfigQueryDto& configQuery);
+
 
             void getConfigurationToJson(cxxtools::SerializationInfo &si, std::string &path);
             int setConfiguration(cxxtools::SerializationInfo *si, const std::string &path);
