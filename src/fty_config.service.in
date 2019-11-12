@@ -3,19 +3,17 @@
 
 [Unit]
 Description=fty-config service
-After=network.target
-# Requires=network.target
-# Conflicts=shutdown.target
-# PartOf=fty-config.target
+After=network.target malamute.service
+Requires=malamute.service network.target
+Before=fty_srr.service
+PartOf=bios.target
 
 [Service]
 Type=simple
-# User=@uid@
+User=@uid@
 Environment="prefix=@prefix@"
-Environment='SYSTEMD_UNIT_FULLNAME=%n'
-ExecStart=@prefix@/bin/fty-config @sysconfdir@/@PACKAGE@/fty-config.cfg
+ExecStart=@prefix@/bin/fty_config --config @sysconfdir@/@PACKAGE@/fty_config.cfg
 Restart=always
 
 [Install]
-WantedBy=multi-user.target
-# WantedBy=fty-config.target
+WantedBy=bios.target

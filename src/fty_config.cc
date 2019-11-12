@@ -128,7 +128,7 @@ int main(int argc, char *argv [])
 
     if (config_file)
     {
-        log_debug((AGENT_NAME + std::string(": loading configuration file from") + config_file).c_str());
+        log_debug((AGENT_NAME + std::string(": loading configuration file from ") + config_file).c_str());
         mlm::ZConfig config(config_file);
         // verbose mode
         std::istringstream(config.getEntry("server/verbose", "0")) >> verbose;
@@ -136,14 +136,14 @@ int main(int argc, char *argv [])
         paramsConfig[ENDPOINT_KEY] = config.getEntry("srr-msg-bus/endpoint", DEFAULT_ENDPOINT);
         paramsConfig[QUEUE_NAME_KEY] = config.getEntry("srr-msg-bus/queueName", MSG_QUEUE_NAME);
         // Configuration file path
-        paramsConfig[MONITORING_FEATURE_NAME] = config.getEntry("available_features/monitoring", "");
-        paramsConfig[NOTIFICATION_FEATURE_NAME] = config.getEntry("available_features/notification", "");
-        paramsConfig[AUTOMATION_SETTINGS] = config.getEntry("available_features/automation-settings", "");
-        paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available_features/user-session", "");
-        paramsConfig[DISCOVERY] = config.getEntry("available_features/discovery", "");
-        paramsConfig[GENERAL_CONFIG] = config.getEntry("available_features/general-config", "");
-        paramsConfig[NETWORK] = config.getEntry("available_features/network", "");
-        paramsConfig[NETWORK] = config.getEntry("available_features/etn-mass-management", "");
+        paramsConfig[MONITORING_FEATURE_NAME] = config.getEntry("available-features/monitoring", "");
+        paramsConfig[NOTIFICATION_FEATURE_NAME] = config.getEntry("available-features/notification", "");
+        paramsConfig[AUTOMATION_SETTINGS] = config.getEntry("available-features/automation-settings", "");
+        paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available-features/user-session", "");
+        paramsConfig[DISCOVERY] = config.getEntry("available-features/discovery", "");
+        paramsConfig[GENERAL_CONFIG] = config.getEntry("available-features/general-config", "");
+        paramsConfig[NETWORK] = config.getEntry("available-features/network", "");
+        paramsConfig[MASS_MANAGEMENT] = config.getEntry("available-features/etn-mass-management", "");
         // Augeas configuration
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");
         paramsConfig[AUGEAS_OPTIONS] = config.getEntry("augeas/augeasOptions", "0");
