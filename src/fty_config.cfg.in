@@ -13,7 +13,7 @@ srr-msg-bus
     address = srr-agent                     #   Agent address
     queueName = ETN.Q.IPMCORE.CONFIG           # Srr queue name for all incoming request.
 
-srr_available_features
+available-features
     monitoring = /etc/fty-nut/fty-nut.cfg
     notification = /etc/fty-email/fty-email.cfg
     automation-settings = /etc/etn-automation/etn-automation.cfg
