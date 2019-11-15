@@ -5,14 +5,14 @@
 Description=fty-config service
 After=network.target malamute.service
 Requires=malamute.service network.target
-Before=fty_srr.service
+Before=fty-srr.service
 PartOf=bios.target
 
 [Service]
 Type=simple
 User=bios
 Environment="prefix=@prefix@"
-ExecStart=@prefix@/bin/fty_config --config @sysconfdir@/@PACKAGE@/fty_config.cfg
+ExecStart=@prefix@/bin/fty-config --config @sysconfdir@/@PACKAGE@/fty-config.cfg
 Restart=always
 
 [Install]

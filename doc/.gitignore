@@ -11,8 +11,8 @@
 *.xml7
 
 # Ignore the source doc texts generated from program sources
-fty_config.txt
-fty_config.doc
+fty-config.txt
+fty-config.doc
 
 # Make sure to track the manually maintained project description
 !*.adoc

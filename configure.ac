@@ -1402,10 +1402,10 @@ fi
      AC_MSG_RESULT([$enable_dist_cmakefiles])])
 AM_CONDITIONAL(ENABLE_DIST_CMAKEFILES, test "x$enable_dist_cmakefiles" = "xyes")
 
-# Check for fty_config intent
-AC_ARG_ENABLE([fty_config],
-    AS_HELP_STRING([--enable-fty_config],
-        [Compile and install 'fty_config' [default=yes]]),
+# Check for fty-config intent
+AC_ARG_ENABLE([fty-config],
+    AS_HELP_STRING([--enable-fty-config],
+        [Compile and install 'fty-config' [default=yes]]),
     [enable_fty_config=$enableval],
     [enable_fty_config=yes])
 
@@ -1564,12 +1564,12 @@ AC_CONFIG_FILES([Makefile
                  doc/Makefile
                  include/Makefile
                  src/libfty_config.pc
-                 src/fty_config.cfg
+                 src/fty-config.cfg
                 ])
 
 AM_COND_IF([WITH_SYSTEMD_UNITS],
     [AC_CONFIG_FILES([
-                 src/fty_config.service
+                 src/fty-config.service
     ])],
     [])
 
