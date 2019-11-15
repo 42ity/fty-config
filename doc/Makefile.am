@@ -6,7 +6,7 @@
 all-local: doc
 
 # Public programs ("main" tags in project.xml), auto-regenerated:
-MAN1 = fty_config.1
+MAN1 = fty-config.1
 # Public classes ("class" tags in project.xml), auto-regenerated:
 MAN3 =
 # Project overview, written by a human after initial skeleton:
@@ -67,10 +67,10 @@ GENERATED_DOCS =
 ### Note: for mains, we keep the source name rather than flattened name:c
 ### so that the manpages for binary programs match their name, at expense
 ### of perhaps being built in a subdirectory under doc/.
-GENERATED_DOCS += fty_config.txt fty_config.doc
-fty_config.txt: $(top_srcdir)/src/fty_config.cc
+GENERATED_DOCS += fty-config.txt fty-config.doc
+fty-config.txt: $(top_srcdir)/src/fty-config.cc
 	mkdir -p "$(builddir)/$(@D)"
-	"$(srcdir)/mkman" "fty_config" "$(builddir)/fty_config.txt" "$(srcdir)/.."
+	"$(srcdir)/mkman" "fty-config" "$(builddir)/fty-config.txt" "$(srcdir)/.."
 
 
 clean-local:

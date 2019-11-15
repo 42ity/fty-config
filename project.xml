@@ -229,6 +229,6 @@
     <!-- Project -->
     <header name ="fty_config_exception">Fty configuration exceptions</header>
     <class name = "fty_config_manager" private = "1" selftest = "0">Fty config manager</class>
-    <main name = "fty_config" service = "1">Fty config Binary</main>
+    <main name = "fty-config" service = "1">Fty config Binary</main>
 
 </project>
