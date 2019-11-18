@@ -95,20 +95,13 @@ namespace config
      * Test if request is valid
      * @param configQuery
      */
-    void ConfigurationManager::checkRequest(const dto::config::ConfigQueryDto& configQuery)
+    void ConfigurationManager::checkRequest(const dto::srr::ConfigQueryDto& configQuery)
     {
-        log_debug("Config query-> action: %s", configQuery.action.c_str());
-        if (configQuery.action.empty())
+        log_debug("Config query-> action: %s", actionToString(configQuery.action).c_str());
+        if ((configQuery.action == dto::srr::Action::SAVE && configQuery.features.empty()) ||
+            (configQuery.action ==  dto::srr::Action::RESTORE && configQuery.data.empty()))
         {
-            throw ConfigurationException("Request action empty");
-        }
-        else
-        {
-            if ((configQuery.action == SAVE_ACTION && configQuery.features.empty()) ||
-                (configQuery.action ==  RESTORE_ACTION && configQuery.data.empty()))
-            {
-                throw ConfigurationException("Request action not valid");
-            }
+            throw ConfigurationException("Request action not valid");
         }
     }
 
@@ -127,7 +120,7 @@ namespace config
             dto::UserData userData;
             // Get request
             dto::UserData data = msg.userData();
-            dto::config::ConfigQueryDto configQuery;
+            dto::srr::ConfigQueryDto configQuery;
             data >> configQuery;
             // Check the request, if not valid throw ConfigurationException
             checkRequest(configQuery);
@@ -135,10 +128,10 @@ namespace config
             aug_load(m_aug.get());
             
             // Check if the command is implemented
-            if (configQuery.action == SAVE_ACTION)
+            if (configQuery.action == dto::srr::Action::SAVE)
             {
                 // Response
-                dto::config::ConfigResponseDto respDto(""/*configQuery.featureName*/, STATUS_FAILED);
+                dto::srr::ConfigResponseDto respDto("", dto::srr::Status::FAILED);
                 std::map<std::string, cxxtools::SerializationInfo> configSiList;
                 for(auto const& feature: configQuery.features)
                 {
@@ -154,10 +147,10 @@ namespace config
                 setSaveResponse(configSiList, respDto);
                 userData << respDto;
             } 
-            else if (configQuery.action == RESTORE_ACTION)
+            else if (configQuery.action == dto::srr::Action::RESTORE)
             {
                 // To store response
-                dto::srr::SrrRestoreDtoList srrRestoreDtoList(STATUS_SUCCESS); 
+                dto::srr::SrrRestoreDtoList srrRestoreDtoList(dto::srr::Status::SUCCESS);
                 // Get request and serialize it
                 cxxtools::SerializationInfo restoreSi;
                 readFromString(configQuery.data, restoreSi);
@@ -166,7 +159,7 @@ namespace config
                 cxxtools::SerializationInfo::Iterator it;
                 for (it = siData.begin(); it != siData.end(); ++it)
                 {
-                    dto::srr::SrrRestoreDto respDto(it->begin()->name(), STATUS_FAILED);
+                    dto::srr::SrrRestoreDto respDto(it->begin()->name(), dto::srr::Status::FAILED);
                     // Build the augeas configuration file name.
                     std::string configurationFileName = AUGEAS_FILES + m_parameters.at(respDto.name);
                     log_debug("Restore configuration for: %s, with configuration file: %s", respDto.name.c_str(), configurationFileName.c_str());
@@ -176,14 +169,14 @@ namespace config
                     if (returnValue == 0)
                     {
                         log_debug("Restore configuration for: %s succeed!", respDto.name.c_str());
-                        respDto.status = STATUS_SUCCESS;
+                        respDto.status = dto::srr::Status::SUCCESS;
                     } 
                     else
                     {
                         std::string errorMsg = "Restore configuration for: " + respDto.name + " failed!";
                         log_error(errorMsg.c_str());
                         respDto.error = errorMsg;
-                        srrRestoreDtoList.status = STATUS_FAILED;
+                        srrRestoreDtoList.status = dto::srr::Status::FAILED;
                     }
                     srrRestoreDtoList.responseList.push_back(respDto);
                }
@@ -213,7 +206,7 @@ namespace config
      * @param responseDto
      * @param configQuery
      */
-    void ConfigurationManager::setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto)
+    void ConfigurationManager::setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::srr::ConfigResponseDto& respDto)
     {
         // Array si
         cxxtools::SerializationInfo jsonResp;
@@ -241,7 +234,7 @@ namespace config
         }
         // Serialize the response
         respDto.data = writeToString (jsonResp, false);
-        respDto.status = STATUS_SUCCESS;
+        respDto.status = dto::srr::Status::SUCCESS;
     }
     
     /**
@@ -250,13 +243,13 @@ namespace config
      * @param responseDto
      * @param configQuery
      */
-    void ConfigurationManager::sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const std::string& subject)
+    void ConfigurationManager::sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const dto::srr::Action action)
     {
         try
         {
             messagebus::Message resp;
             resp.userData() = userData;
-            resp.metaData().emplace(messagebus::Message::SUBJECT, subject);
+            resp.metaData().emplace(messagebus::Message::SUBJECT, actionToString(action));
             resp.metaData().emplace(messagebus::Message::FROM, m_parameters.at(AGENT_NAME_KEY));
             resp.metaData().emplace(messagebus::Message::TO, msg.metaData().find(messagebus::Message::FROM)->second);
             resp.metaData().emplace(messagebus::Message::COORELATION_ID, msg.metaData().find(messagebus::Message::COORELATION_ID)->second);

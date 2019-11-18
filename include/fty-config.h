@@ -34,13 +34,6 @@ constexpr auto CONFIG_DEFAULT_LOG_CONFIG = "/etc/fty/ftylog.cfg";
 // Queue definition
 constexpr auto QUEUE_NAME_KEY            = "queueName";
 constexpr auto MSG_QUEUE_NAME            = "ETN.Q.IPMCORE.CONFIG";
-// Action definition
-constexpr auto SAVE_ACTION               = "save";
-constexpr auto RESTORE_ACTION            = "restore";
-constexpr auto RESET_ACTION              = "reset";
-// Status definition
-constexpr auto STATUS_SUCCESS            = "success";
-constexpr auto STATUS_FAILED             = "failed";
 // Features definition
 constexpr auto MONITORING_FEATURE_NAME   = "monitoring";
 constexpr auto NOTIFICATION_FEATURE_NAME = "notification";

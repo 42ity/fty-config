@@ -55,7 +55,7 @@ namespace config
 
             void init();
             void handleRequest(messagebus::Message msg);
-            void checkRequest(const dto::config::ConfigQueryDto& configQuery);
+            void checkRequest(const dto::srr::ConfigQueryDto& configQuery);
 
 
             void getConfigurationToJson(cxxtools::SerializationInfo &si, std::string &path);
@@ -63,8 +63,8 @@ namespace config
 
             std::string getConfigurationFileName (const std::string& featureName);
 
-            void setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::config::ConfigResponseDto& respDto);
-            void sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const std::string& subject);
+            void setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::srr::ConfigResponseDto& respDto);
+            void sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const dto::srr::Action action);
 
             // Utility
             void dumpConfiguration(std::string& path);
