@@ -41,6 +41,7 @@
 
 using namespace std::placeholders;
 using namespace JSON;
+using namespace dto::srr;
 
 namespace config
 {
@@ -95,11 +96,11 @@ namespace config
      * Test if request is valid
      * @param configQuery
      */
-    void ConfigurationManager::checkRequest(const dto::srr::ConfigQueryDto& configQuery)
+    void ConfigurationManager::checkRequest(const ConfigQueryDto& configQuery)
     {
         log_debug("Config query-> action: %s", actionToString(configQuery.action).c_str());
-        if ((configQuery.action == dto::srr::Action::SAVE && configQuery.features.empty()) ||
-            (configQuery.action ==  dto::srr::Action::RESTORE && configQuery.data.empty()))
+        if ((configQuery.action == Action::SAVE && configQuery.features.empty()) ||
+            (configQuery.action ==  Action::RESTORE && configQuery.data.empty()))
         {
             throw ConfigurationException("Request action not valid");
         }
@@ -120,71 +121,73 @@ namespace config
             dto::UserData userData;
             // Get request
             dto::UserData data = msg.userData();
-            dto::srr::ConfigQueryDto configQuery;
+            ConfigQueryDto configQuery;
             data >> configQuery;
             // Check the request, if not valid throw ConfigurationException
             checkRequest(configQuery);
             // Load augeas for any request (to avoid any cache).
             aug_load(m_aug.get());
             
-            // Check if the command is implemented
-            if (configQuery.action == dto::srr::Action::SAVE)
+            switch (configQuery.action)
             {
-                // Response
-                dto::srr::ConfigResponseDto respDto("", dto::srr::Status::FAILED);
-                std::map<std::string, cxxtools::SerializationInfo> configSiList;
-                for(auto const& feature: configQuery.features)
+                case (Action::SAVE):
                 {
-                    // Get the configuration file path name from class variable m_parameters
-                    std::string configurationFileName = AUGEAS_FILES + m_parameters.at(feature) + ANY_NODES;
-                    log_debug("Configuration file name: %s", configurationFileName.c_str());
-                    
-                    cxxtools::SerializationInfo si;
-                    getConfigurationToJson(si, configurationFileName);
-                    configSiList[feature] = si;
-                }
-                // Set response
-                setSaveResponse(configSiList, respDto);
-                userData << respDto;
-            } 
-            else if (configQuery.action == dto::srr::Action::RESTORE)
-            {
-                // To store response
-                dto::srr::SrrRestoreDtoList srrRestoreDtoList(dto::srr::Status::SUCCESS);
-                // Get request and serialize it
-                cxxtools::SerializationInfo restoreSi;
-                readFromString(configQuery.data, restoreSi);
-                // Get data member
-                cxxtools::SerializationInfo siData = restoreSi.getMember(DATA_MEMBER);
-                cxxtools::SerializationInfo::Iterator it;
-                for (it = siData.begin(); it != siData.end(); ++it)
-                {
-                    dto::srr::SrrRestoreDto respDto(it->begin()->name(), dto::srr::Status::FAILED);
-                    // Build the augeas configuration file name.
-                    std::string configurationFileName = AUGEAS_FILES + m_parameters.at(respDto.name);
-                    log_debug("Restore configuration for: %s, with configuration file: %s", respDto.name.c_str(), configurationFileName.c_str());
-                    
-                    cxxtools::SerializationInfo siData = it->getMember(respDto.name).getMember(DATA_MEMBER);
-                    int returnValue = setConfiguration(&siData, configurationFileName);
-                    if (returnValue == 0)
+                    // Response
+                    ConfigResponseDto respDto("", Status::FAILED);
+                    std::map<std::string, cxxtools::SerializationInfo> configSiList;
+                    for(auto const& feature: configQuery.features)
                     {
-                        log_debug("Restore configuration for: %s succeed!", respDto.name.c_str());
-                        respDto.status = dto::srr::Status::SUCCESS;
-                    } 
-                    else
-                    {
-                        std::string errorMsg = "Restore configuration for: " + respDto.name + " failed!";
-                        log_error(errorMsg.c_str());
-                        respDto.error = errorMsg;
-                        srrRestoreDtoList.status = dto::srr::Status::FAILED;
+                        // Get the configuration file path name from class variable m_parameters
+                        std::string configurationFileName = AUGEAS_FILES + m_parameters.at(feature) + ANY_NODES;
+                        log_debug("Configuration file name: %s", configurationFileName.c_str());
+
+                        cxxtools::SerializationInfo si;
+                        getConfigurationToJson(si, configurationFileName);
+                        configSiList[feature] = si;
                     }
-                    srrRestoreDtoList.responseList.push_back(respDto);
-               }
-               userData << srrRestoreDtoList;
-            } 
-            else
-            {
-                throw ConfigurationException("Wrong command");
+                    // Set response
+                    setSaveResponse(configSiList, respDto);
+                    userData << respDto;
+                    break;
+                }
+                case (Action::RESTORE):
+                {
+                    // To store response
+                    SrrRestoreDtoList srrRestoreDtoList(Status::SUCCESS);
+                    // Get request and serialize it
+                    cxxtools::SerializationInfo restoreSi;
+                    readFromString(configQuery.data, restoreSi);
+                    // Get data member
+                    cxxtools::SerializationInfo siData = restoreSi.getMember(DATA_MEMBER);
+                    cxxtools::SerializationInfo::Iterator it;
+                    for (it = siData.begin(); it != siData.end(); ++it)
+                    {
+                        SrrRestoreDto respDto(it->begin()->name(), Status::FAILED);
+                        // Build the augeas configuration file name.
+                        std::string configurationFileName = AUGEAS_FILES + m_parameters.at(respDto.name);
+                        log_debug("Restore configuration for: %s, with configuration file: %s", respDto.name.c_str(), configurationFileName.c_str());
+
+                        cxxtools::SerializationInfo siData = it->getMember(respDto.name).getMember(DATA_MEMBER);
+                        int returnValue = setConfiguration(&siData, configurationFileName);
+                        if (returnValue == 0)
+                        {
+                            log_debug("Restore configuration for: %s succeed!", respDto.name.c_str());
+                            respDto.status = Status::SUCCESS;
+                        } 
+                        else
+                        {
+                            std::string errorMsg = "Restore configuration for: " + respDto.name + " failed!";
+                            log_error(errorMsg.c_str());
+                            respDto.error = errorMsg;
+                            srrRestoreDtoList.status = Status::FAILED;
+                        }
+                        srrRestoreDtoList.responseList.push_back(respDto);
+                    }
+                    userData << srrRestoreDtoList;
+                    break;
+                }
+                default:
+                    throw ConfigurationException("Wrong command");
             }
             // Send response
             sendResponse(msg, userData, configQuery.action);
@@ -206,7 +209,7 @@ namespace config
      * @param responseDto
      * @param configQuery
      */
-    void ConfigurationManager::setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::srr::ConfigResponseDto& respDto)
+    void ConfigurationManager::setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, ConfigResponseDto& respDto)
     {
         // Array si
         cxxtools::SerializationInfo jsonResp;
@@ -234,7 +237,7 @@ namespace config
         }
         // Serialize the response
         respDto.data = writeToString (jsonResp, false);
-        respDto.status = dto::srr::Status::SUCCESS;
+        respDto.status = Status::SUCCESS;
     }
     
     /**
@@ -243,7 +246,7 @@ namespace config
      * @param responseDto
      * @param configQuery
      */
-    void ConfigurationManager::sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const dto::srr::Action action)
+    void ConfigurationManager::sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const Action action)
     {
         try
         {
