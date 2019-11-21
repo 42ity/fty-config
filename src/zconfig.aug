@@ -35,6 +35,7 @@ let filter =
   incl "/etc/fty/*.cfg" .
   incl "/etc/etn-*/*.cfg" .
   incl "/etc/fty-*/*.cfg" .
+  incl "/var/lib/fty/*/*.cfg" .
   Util.stdexcl
 
 let xfm = transform lns filter
