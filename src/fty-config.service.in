@@ -10,7 +10,7 @@ PartOf=bios.target
 
 [Service]
 Type=simple
-User=bios
+User=www-data
 Environment="prefix=@prefix@"
 ExecStart=@prefix@/bin/fty-config --config @sysconfdir@/@PACKAGE@/fty-config.cfg
 Restart=always

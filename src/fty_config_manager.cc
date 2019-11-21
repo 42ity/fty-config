@@ -162,7 +162,7 @@ namespace config
                     cxxtools::SerializationInfo::Iterator it;
                     for (it = siData.begin(); it != siData.end(); ++it)
                     {
-                        SrrRestoreDto respDto(it->begin()->name(), Status::FAILED);
+                        SrrRestoreDto respDto(it->begin()->name(), Status::SUCCESS);
                         // Build the augeas configuration file name.
                         std::string configurationFileName = AUGEAS_FILES + m_parameters.at(respDto.name);
                         log_debug("Restore configuration for: %s, with configuration file: %s", respDto.name.c_str(), configurationFileName.c_str());
@@ -172,14 +172,20 @@ namespace config
                         if (returnValue == 0)
                         {
                             log_debug("Restore configuration for: %s succeed!", respDto.name.c_str());
-                            respDto.status = Status::SUCCESS;
                         } 
                         else
                         {
-                            std::string errorMsg = "Restore configuration for: " + respDto.name + " failed!";
-                            log_error(errorMsg.c_str());
-                            respDto.error = errorMsg;
-                            srrRestoreDtoList.status = Status::FAILED;
+                            respDto.error = "Restore configuration for: " + respDto.name + " failed!";
+                            respDto.status = Status::FAILED;
+                            log_error(respDto.error.c_str());
+                            if (srrRestoreDtoList.status == Status::SUCCESS)
+                            {
+                                srrRestoreDtoList.status = Status::PARTIAL_SUCCESS;
+                            }
+                            else 
+                            {
+                                srrRestoreDtoList.status = Status::FAILED;
+                            }
                         }
                         srrRestoreDtoList.responseList.push_back(respDto);
                     }
