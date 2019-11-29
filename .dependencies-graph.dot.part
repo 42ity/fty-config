@@ -1,0 +1,6 @@
+   fty-config -> fty-common-logging;
+   fty-config -> cxxtools;
+   fty-config -> fty-common;
+   fty-config -> fty-common-mlm;
+   fty-config -> fty-common-messagebus;
+   fty-config -> fty-common-dto;
