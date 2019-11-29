@@ -52,21 +52,22 @@ namespace config
             using AugeasSmartPtr = std::unique_ptr<augeas, decltype(&aug_close)>;
             AugeasSmartPtr m_aug;
             std::unique_ptr<messagebus::MessageBus> m_msgBus;
+            dto::srr::SrrQueryProcessor m_processor;
 
             void init();
             void handleRequest(messagebus::Message msg);
-            void checkRequest(const dto::srr::ConfigQueryDto& configQuery);
 
-
-            void getConfigurationToJson(cxxtools::SerializationInfo &si, std::string &path);
-            int setConfiguration(cxxtools::SerializationInfo *si, const std::string &path);
-
-            std::string getConfigurationFileName (const std::string& featureName);
-
-            void setSaveResponse (const std::map<std::string, cxxtools::SerializationInfo>& configSiList, dto::srr::ConfigResponseDto& respDto);
-            void sendResponse(const messagebus::Message& msg, const dto::UserData& userData, const dto::srr::Action action);
+            // Request processor
+            dto::srr::SaveResponse saveConfiguration(const dto::srr::SaveQuery& query);
+            dto::srr::RestoreResponse restoreConfiguration(const dto::srr::RestoreQuery& query);
+            dto::srr::ResetResponse resetConfiguration(const dto::srr::ResetQuery& query);
+            
+            void getConfigurationToJson(cxxtools::SerializationInfo& si, std::string &path);
+            int setConfiguration(cxxtools::SerializationInfo& si, const std::string &path);
+            void sendResponse(const messagebus::Message& msg, const dto::UserData& userData);
 
             // Utility
+            std::string getConfigurationFileName (const std::string& featureName);
             void dumpConfiguration(std::string& path);
             std::string findMemberFromMatch(const std::string& input);
             int getAugeasFlags(std::string& augeasOpts);
