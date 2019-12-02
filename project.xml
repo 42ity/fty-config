@@ -78,6 +78,10 @@
     <use project = "fty-common-dto" libname = "libfty_common_dto" header = "fty_common_dto.h"
         repository = "https://github.com/42ity/fty-common-dto.git" />
 
+    <!-- use protobuf -->
+        <use project = "protobuf" header = "google/protobuf/stubs/common.h"
+            repository = "https://github.com/42ity/protobuf.git"/>
+
     <!-- Project -->
     <header name ="fty_config_exception">Fty configuration exceptions</header>
     <class name = "fty_config_manager" private = "1" selftest = "0">Fty config manager</class>

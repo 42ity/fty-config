@@ -4,3 +4,4 @@
    fty-config -> fty-common-mlm;
    fty-config -> fty-common-messagebus;
    fty-config -> fty-common-dto;
+   fty-config -> protobuf;
