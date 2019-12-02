@@ -44,27 +44,7 @@ using namespace JSON;
 using namespace dto::srr;
 namespace config
 {
-    static cxxtools::SerializationInfo deserializeJson(const std::string & json)
-    {
-        cxxtools::SerializationInfo si;
-
-        try
-        {
-            std::stringstream input;
-            input << json;
-            cxxtools::JsonDeserializer deserializer(input);
-            deserializer.deserialize(si);
-        }
-        catch(const std::exception& e)
-        {
-            throw std::runtime_error("Error in the json from server: "+std::string(e.what()));
-        }
-
-        return si;
-
-    }
-    
-    
+ 
     const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
     
     /**
@@ -194,7 +174,6 @@ namespace config
         
         for(const auto& item: mapFeaturesData)
         {
-            //std::cout << featureName << std::endl;
             const std::string& featureName = item.first;
             const Feature& feature = item.second;
             const std::string& configurationFileName = AUGEAS_FILES + m_parameters.at(featureName);
