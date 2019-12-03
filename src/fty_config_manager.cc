@@ -179,11 +179,9 @@ namespace config
             const std::string& configurationFileName = AUGEAS_FILES + m_parameters.at(featureName);
             log_debug("Restoring configuration for: %s, with configuration file: %s", featureName.c_str(), configurationFileName.c_str());
 
-            cxxtools::SerializationInfo restoreSi;
-            // TODO
-            JSON::readFromString("{" + feature.data() + "}", restoreSi);
+            cxxtools::SerializationInfo siData;
+            JSON::readFromString(feature.data(), siData);
             // Get data member
-            cxxtools::SerializationInfo siData = restoreSi.getMember(DATA_MEMBER);
             int returnValue = setConfiguration(siData, configurationFileName);
             
             FeatureStatus featureStatus;
