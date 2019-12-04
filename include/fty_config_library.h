@@ -37,6 +37,7 @@
 #include <fty_common_mlm.h>
 #include <fty_common_messagebus.h>
 #include <fty_common_dto.h>
+#include <google/protobuf/stubs/common.h>
 
 //  FTY_CONFIG version macros for compile-time API detection
 #define FTY_CONFIG_VERSION_MAJOR 1

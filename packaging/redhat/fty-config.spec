@@ -62,6 +62,7 @@ BuildRequires:  fty-common-devel
 BuildRequires:  fty-common-mlm-devel
 BuildRequires:  fty-common-messagebus-devel
 BuildRequires:  fty-common-dto-devel
+BuildRequires:  protobuf-devel
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
