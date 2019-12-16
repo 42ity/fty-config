@@ -13,22 +13,27 @@ let eol = del /\n/ "\n"
 let comment = [ label "#comment" . del / +#/ " #" . store /[^\n]*/ ]
 let empty = Util.empty
 
-let header = key Rx.word . (del / = ""/ " = \"\"") ? . comment? . eol
-let data = Quote.dquote_spaces ( key Rx.word . del / = / " = " ) . comment? . eol
+let data = key Rx.word . ( Sep.space_equal . ( Quote.do_dquote ( store /[^\n"]*/ ) ) )? . comment?
 
-let headerL0 = header
-let headerL1 = indent . header
-let headerL2 = indent . indent . header
+let dataL0 = data . eol
+let dataL1 = indent . data . eol
+let dataL2 = indent . indent . data . eol
+let dataL3 = indent . indent . indent . data . eol
+let dataL4 = indent . indent . indent . indent . data . eol
 
-let dataL1 = ( indent . data )
-let dataL2 = ( indent . indent . data )
-let dataL3 = ( indent . indent . indent . data )
+(*let dataL0 = data . eol
+let dataL1 = indent . data . eol
+let dataL2 = indent . indent . data . eol
+let dataL3 = indent . indent . indent . data . eol
+let dataL4 = indent . indent . indent . indent . data . eol*)
 
-let treeL2 = [ headerL2 . (dataL3)* ]
-let treeL1 = [ headerL1 . (dataL2 | treeL2)* ]
-let treeL0 = [ headerL0 . (dataL1 | treeL1)* ]
+let treeL4 = [ dataL4 ]
+let treeL3 = [ dataL3 . treeL4* ]
+let treeL2 = [ dataL2 . treeL3* ]
+let treeL1 = [ dataL1 . treeL2* ]
+let treeL0 = [ dataL0 . treeL1* ]
 
-let lns = (Util.comment | empty | treeL0 | data )*
+let lns = ( Util.comment | empty | treeL0 )+
 
 let filter =
   incl "/etc/fty/*.cfg" .
