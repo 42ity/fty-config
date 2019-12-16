@@ -31,7 +31,6 @@ let treeL0 = [ headerL0 . (dataL1 | treeL1)* ]
 let lns = (Util.comment | empty | treeL0 | data )*
 
 let filter =
-  incl "/etc/default/fty.cfg" .
   incl "/etc/fty/*.cfg" .
   incl "/etc/etn-*/*.cfg" .
   incl "/etc/fty-*/*.cfg" .
