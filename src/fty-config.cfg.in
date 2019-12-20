@@ -19,7 +19,6 @@ available-features
     automation-settings = /etc/etn-automation/etn-automation.cfg
     user-session = /etc/fty/fty-session.cfg
     discovery = /etc/fty-discovery/fty-discovery.cfg
-    general-config = /etc/default/fty.cfg
     network = /etc/network/interfaces
     etn-mass-management = /var/lib/fty/etn-mass-management/settings.cfg
 

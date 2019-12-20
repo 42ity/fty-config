@@ -151,12 +151,16 @@ namespace config
             feature.set_version(ACTIVE_VERSION);
             feature.set_data(JSON::writeToString(si, false));
             
-            FeatureAndStatus fs1;
-            *(fs1.mutable_feature()) = feature; 
-            mapFeaturesData[featureName] = fs1;
+            FeatureStatus featureStatus;
+            featureStatus.set_status(Status::SUCCESS);
+            
+            FeatureAndStatus fs;
+            *(fs.mutable_status()) = featureStatus;
+            *(fs.mutable_feature()) = feature; 
+            mapFeaturesData[featureName] = fs;
         }
         log_debug("Save configuration done");
-        return (createSaveResponse(mapFeaturesData)).save();
+        return (createSaveResponse(mapFeaturesData, ACTIVE_VERSION)).save();
     }
     
     /**
