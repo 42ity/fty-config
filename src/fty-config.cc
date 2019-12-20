@@ -140,7 +140,6 @@ int main(int argc, char *argv [])
         paramsConfig[AUTOMATION_SETTINGS] = config.getEntry("available-features/automation-settings", "");
         paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available-features/user-session", "");
         paramsConfig[DISCOVERY] = config.getEntry("available-features/discovery", "");
-        paramsConfig[GENERAL_CONFIG] = config.getEntry("available-features/general-config", "");
         paramsConfig[NETWORK] = config.getEntry("available-features/network", "");
         paramsConfig[MASS_MANAGEMENT] = config.getEntry("available-features/etn-mass-management", "");
         // Augeas configuration

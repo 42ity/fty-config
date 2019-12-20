@@ -40,7 +40,6 @@ constexpr auto NOTIFICATION_FEATURE_NAME = "notification";
 constexpr auto AUTOMATION_SETTINGS       = "automation-settings";
 constexpr auto USER_SESSION_FEATURE_NAME = "user-session";
 constexpr auto DISCOVERY                 = "discovery";
-constexpr auto GENERAL_CONFIG            = "general-config";
 constexpr auto MASS_MANAGEMENT           = "etn-mass-management";
 constexpr auto NETWORK                   = "network";
 
