@@ -47,8 +47,9 @@ constexpr auto NETWORK                   = "network";
 constexpr auto AUGEAS_LENS_PATH          = "AugeasLensPath";
 constexpr auto AUGEAS_OPTIONS            = "augeasOptions";
 // Properties definition
-constexpr auto SRR_VERSION               = "version";
+constexpr auto CONFIG_VERSION_KEY        = "version";
 constexpr auto ACTIVE_VERSION            = "1.0";
 constexpr auto DATA_MEMBER               = "data";
+
 
 #endif

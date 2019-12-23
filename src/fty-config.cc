@@ -124,6 +124,8 @@ int main(int argc, char *argv [])
     // Default augeas configuration.
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
     paramsConfig[AUGEAS_OPTIONS] = AUG_NONE;
+    // version
+    paramsConfig[CONFIG_VERSION_KEY] = ACTIVE_VERSION;
 
     if (config_file)
     {
@@ -145,6 +147,8 @@ int main(int argc, char *argv [])
         // Augeas configuration
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");
         paramsConfig[AUGEAS_OPTIONS] = config.getEntry("augeas/augeasOptions", "0");
+        // version
+        paramsConfig[CONFIG_VERSION_KEY] = config.getEntry("config/version", ACTIVE_VERSION);
     }
 
     if (verbose)

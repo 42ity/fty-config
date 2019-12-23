@@ -83,6 +83,8 @@ namespace config
             m_processor.saveHandler = std::bind(&ConfigurationManager::saveConfiguration, this, _1);
             m_processor.restoreHandler = std::bind(&ConfigurationManager::restoreConfiguration, this, _1);
             m_processor.resetHandler = std::bind(&ConfigurationManager::resetConfiguration, this, _1);
+            // Srr version
+            m_configVersion = m_parameters.at(CONFIG_VERSION_KEY);
             
             // Listen all incoming request
             auto fct = std::bind(&ConfigurationManager::handleRequest, this, _1);
@@ -148,7 +150,7 @@ namespace config
             getConfigurationToJson(si, configurationFileName);
             
             Feature feature;
-            feature.set_version(ACTIVE_VERSION);
+            feature.set_version(m_configVersion);
             feature.set_data(JSON::writeToString(si, false));
             
             FeatureStatus featureStatus;
@@ -160,7 +162,7 @@ namespace config
             mapFeaturesData[featureName] = fs;
         }
         log_debug("Save configuration done");
-        return (createSaveResponse(mapFeaturesData, ACTIVE_VERSION)).save();
+        return (createSaveResponse(mapFeaturesData, m_configVersion)).save();
     }
     
     /**
@@ -180,25 +182,35 @@ namespace config
         {
             const std::string& featureName = item.first;
             const Feature& feature = item.second;
-            const std::string& configurationFileName = AUGEAS_FILES + m_parameters.at(featureName);
-            log_debug("Restoring configuration for: %s, with configuration file: %s", featureName.c_str(), configurationFileName.c_str());
-
-            cxxtools::SerializationInfo siData;
-            JSON::readFromString(feature.data(), siData);
-            // Get data member
-            int returnValue = setConfiguration(siData, configurationFileName);
-            
             FeatureStatus featureStatus;
-            if (returnValue == 0)
+            bool compatible = isVerstionCompatible(feature.version());
+            if (compatible)
             {
-                log_debug("Restore configuration done: %s succeed!", featureName.c_str());
-                featureStatus.set_status(Status::SUCCESS);
-            } 
+                const std::string& configurationFileName = AUGEAS_FILES + m_parameters.at(featureName);
+                log_debug("Restoring configuration for: %s, with configuration file: %s", featureName.c_str(), configurationFileName.c_str());
+
+                cxxtools::SerializationInfo siData;
+                JSON::readFromString(feature.data(), siData);
+                // Get data member
+                int returnValue = setConfiguration(siData, configurationFileName);
+                if (returnValue == 0)
+                {
+                    log_debug("Restore configuration done: %s succeed!", featureName.c_str());
+                    featureStatus.set_status(Status::SUCCESS);
+                } 
+                else
+                {
+                    featureStatus.set_status(Status::FAILED);
+                    featureStatus.set_error("Restore configuration for: " + featureName + " failed, access right issue!");
+                    log_error(featureStatus.error().c_str());
+                }
+            }
             else
             {
+                std::string errorMsg = "Config version (" + m_configVersion + ") is not compatible with the restore version request: " + feature.version();
+                log_error(errorMsg.c_str());
                 featureStatus.set_status(Status::FAILED);
-                featureStatus.set_error("Restore configuration for: " + featureName + " failed, access right issue!");
-                log_error(featureStatus.error().c_str());
+                featureStatus.set_error(errorMsg);
             }
             mapStatus[featureName] = featureStatus;
         }
@@ -418,5 +430,18 @@ namespace config
             }
         }
         return returnValue;
+    }
+    
+    bool ConfigurationManager::isVerstionCompatible(const std::string& version)
+    {
+        bool comptible = false;
+        int configVersion = std::stoi(m_configVersion);
+        int requestVersion = std::stoi(version);
+        
+        if (configVersion >= requestVersion)
+        {
+            comptible = true;
+        }
+        return comptible;
     }
 }
