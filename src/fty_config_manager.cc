@@ -201,13 +201,14 @@ namespace config
                 else
                 {
                     featureStatus.set_status(Status::FAILED);
-                    featureStatus.set_error("Restore configuration for: " + featureName + " failed, access right issue!");
+                    std::string errorMsg = TRANSLATE_ME("Restore configuration for: (%s) failed, access right issue!", featureName.c_str());
+                    featureStatus.set_error(errorMsg);
                     log_error(featureStatus.error().c_str());
                 }
             }
             else
             {
-                std::string errorMsg = "Config version (" + m_configVersion + ") is not compatible with the restore version request: " + feature.version();
+                std::string errorMsg = TRANSLATE_ME("Config version (%s) is not compatible with the restore version request: (%s)", m_configVersion.c_str(), feature.version().c_str());
                 log_error(errorMsg.c_str());
                 featureStatus.set_status(Status::FAILED);
                 featureStatus.set_error(errorMsg);
