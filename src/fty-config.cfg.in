@@ -16,7 +16,7 @@ srr-msg-bus
 available-features
     monitoring = /etc/fty-nut/fty-nut.cfg
     notification = /etc/fty-email/fty-email.cfg
-    automation-settings = /etc/etn-automation/etn-automation.cfg
+    automation-settings = /etc/fty/etn-automation.cfg
     user-session = /etc/fty/fty-session.cfg
     discovery = /etc/fty-discovery/fty-discovery.cfg
     network = /etc/network/interfaces
