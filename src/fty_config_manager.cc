@@ -69,7 +69,7 @@ namespace config
             int augeasOpt = getAugeasFlags(m_parameters.at(AUGEAS_OPTIONS));
             log_debug("augeas options: %d", augeasOpt);
 
-            m_aug = AugeasSmartPtr(aug_init(FILE_SEPARATOR, m_parameters.at(AUGEAS_LENS_PATH).c_str(), AUG_SAVE_NOOP/*augeasOpt*/), aug_close);
+            m_aug = AugeasSmartPtr(aug_init(FILE_SEPARATOR, m_parameters.at(AUGEAS_LENS_PATH).c_str(), AUG_NONE /*augeasOpt*/), aug_close);
             if (!m_aug)
             {
                 throw ConfigurationException("Augeas tool initialization failed");
