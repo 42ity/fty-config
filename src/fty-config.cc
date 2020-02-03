@@ -116,7 +116,7 @@ int main(int argc, char *argv [])
     // Default configuration files path.
     paramsConfig[MONITORING_FEATURE_NAME] = "/etc/fty-nut/fty-nut.cfg";
     paramsConfig[NOTIFICATION_FEATURE_NAME] = "/etc/fty-email/fty-email.cfg";
-    paramsConfig[AUTOMATION_SETTINGS] = "/etc/etn-automation/etn-automation.cfg";
+    paramsConfig[AUTOMATION_SETTINGS] = "/etc/fty/etn-automation.cfg";
     paramsConfig[USER_SESSION_FEATURE_NAME] = "/etc/fty/fty-session.cfg";
     paramsConfig[DISCOVERY] = "/etc/fty-discovery/fty-discovery.cfg";
     paramsConfig[NETWORK] = "/etc/network/interfaces";
