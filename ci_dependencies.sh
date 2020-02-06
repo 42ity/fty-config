@@ -34,11 +34,12 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_l
        (command -v brew >/dev/null 2>&1 && brew ls --versions fty-common-logging >/dev/null 2>&1) || \
        ([ -e "fty-common-logging" ]) \
 ; then
- FOLDER_NAME="fty-common-logging"
 
- if [ -d "$FOLDER_NAME" ]; then
+    FOLDER_NAME="fty-common-logging"
+
+if [ -d "$FOLDER_NAME" ]; then
     echo "$FOLDER_NAME already exist. Skipped." >&2
- else
+else
     echo ""
     BASE_PWD=${PWD}
     echo "`date`: INFO: Building prerequisite 'fty-common-logging' from Git repository..." >&2
@@ -55,7 +56,8 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_l
             $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/fty-common-logging.git $FOLDER_NAME
         fi
     fi
-    cd "./$FOLDER_NAME"
+    echo "Entering in ${PWD}/${FOLDER_NAME}"
+    cd "./${FOLDER_NAME}"
     CCACHE_BASEDIR=${PWD}
     export CCACHE_BASEDIR
         git --no-pager log --oneline -n1
@@ -90,7 +92,9 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_l
     $CI_TIME ./configure "${CONFIG_OPTS[@]}"
     $CI_TIME make -j4
     $CI_TIME make install
+    echo "Leaving from ${PWD}"
     cd "${BASE_PWD}"
+    echo "Now in ${PWD}"
 fi
 fi
 
@@ -100,11 +104,12 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list cxxtools-dev >/
        (command -v brew >/dev/null 2>&1 && brew ls --versions cxxtools >/dev/null 2>&1) || \
        ([ -e "cxxtools" ]) \
 ; then
- FOLDER_NAME="cxxtools"
 
- if [ -d "$FOLDER_NAME" ]; then
+    FOLDER_NAME="cxxtools"
+
+if [ -d "$FOLDER_NAME" ]; then
     echo "$FOLDER_NAME already exist. Skipped." >&2
- else
+else
     echo ""
     BASE_PWD=${PWD}
     echo "`date`: INFO: Building prerequisite 'cxxtools' from Git repository..." >&2
@@ -121,7 +126,8 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list cxxtools-dev >/
             $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/cxxtools.git $FOLDER_NAME
         fi
     fi
-    cd "./$FOLDER_NAME"
+    echo "Entering in ${PWD}/${FOLDER_NAME}"
+    cd "./${FOLDER_NAME}"
     CCACHE_BASEDIR=${PWD}
     export CCACHE_BASEDIR
         git --no-pager log --oneline -n1
@@ -156,7 +162,9 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list cxxtools-dev >/
     $CI_TIME ./configure "${CONFIG_OPTS[@]}"
     $CI_TIME make -j4
     $CI_TIME make install
+    echo "Leaving from ${PWD}"
     cd "${BASE_PWD}"
+    echo "Now in ${PWD}"
 fi
 fi
 
@@ -166,11 +174,12 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common-d
        (command -v brew >/dev/null 2>&1 && brew ls --versions fty-common >/dev/null 2>&1) || \
        ([ -e "fty-common" ]) \
 ; then
- FOLDER_NAME="fty-common"
 
- if [ -d "$FOLDER_NAME" ]; then
+    FOLDER_NAME="fty-common"
+
+if [ -d "$FOLDER_NAME" ]; then
     echo "$FOLDER_NAME already exist. Skipped." >&2
- else
+else
     echo ""
     BASE_PWD=${PWD}
     echo "`date`: INFO: Building prerequisite 'fty-common' from Git repository..." >&2
@@ -187,7 +196,8 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common-d
             $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/fty-common.git $FOLDER_NAME
         fi
     fi
-    cd "./$FOLDER_NAME"
+    echo "Entering in ${PWD}/${FOLDER_NAME}"
+    cd "./${FOLDER_NAME}"
     CCACHE_BASEDIR=${PWD}
     export CCACHE_BASEDIR
         git --no-pager log --oneline -n1
@@ -222,7 +232,9 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common-d
     $CI_TIME ./configure "${CONFIG_OPTS[@]}"
     $CI_TIME make -j4
     $CI_TIME make install
+    echo "Leaving from ${PWD}"
     cd "${BASE_PWD}"
+    echo "Now in ${PWD}"
 fi
 fi
 
@@ -232,11 +244,12 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_m
        (command -v brew >/dev/null 2>&1 && brew ls --versions fty-common-mlm >/dev/null 2>&1) || \
        ([ -e "fty-common-mlm" ]) \
 ; then
- FOLDER_NAME="fty-common-mlm"
 
- if [ -d "$FOLDER_NAME" ]; then
+    FOLDER_NAME="fty-common-mlm"
+
+if [ -d "$FOLDER_NAME" ]; then
     echo "$FOLDER_NAME already exist. Skipped." >&2
- else
+else
     echo ""
     BASE_PWD=${PWD}
     echo "`date`: INFO: Building prerequisite 'fty-common-mlm' from Git repository..." >&2
@@ -253,7 +266,8 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_m
             $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/fty-common-mlm.git $FOLDER_NAME
         fi
     fi
-    cd "./$FOLDER_NAME"
+    echo "Entering in ${PWD}/${FOLDER_NAME}"
+    cd "./${FOLDER_NAME}"
     CCACHE_BASEDIR=${PWD}
     export CCACHE_BASEDIR
         git --no-pager log --oneline -n1
@@ -288,7 +302,9 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_m
     $CI_TIME ./configure "${CONFIG_OPTS[@]}"
     $CI_TIME make -j4
     $CI_TIME make install
+    echo "Leaving from ${PWD}"
     cd "${BASE_PWD}"
+    echo "Now in ${PWD}"
 fi
 fi
 
@@ -298,11 +314,12 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_m
        (command -v brew >/dev/null 2>&1 && brew ls --versions fty-common-messagebus >/dev/null 2>&1) || \
        ([ -e "fty-common-messagebus" ]) \
 ; then
- FOLDER_NAME="fty-common-messagebus"
 
- if [ -d "$FOLDER_NAME" ]; then
+    FOLDER_NAME="fty-common-messagebus"
+
+if [ -d "$FOLDER_NAME" ]; then
     echo "$FOLDER_NAME already exist. Skipped." >&2
- else
+else
     echo ""
     BASE_PWD=${PWD}
     echo "`date`: INFO: Building prerequisite 'fty-common-messagebus' from Git repository..." >&2
@@ -319,7 +336,8 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_m
             $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/fty-common-messagebus.git $FOLDER_NAME
         fi
     fi
-    cd "./$FOLDER_NAME"
+    echo "Entering in ${PWD}/${FOLDER_NAME}"
+    cd "./${FOLDER_NAME}"
     CCACHE_BASEDIR=${PWD}
     export CCACHE_BASEDIR
         git --no-pager log --oneline -n1
@@ -354,7 +372,9 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_m
     $CI_TIME ./configure "${CONFIG_OPTS[@]}"
     $CI_TIME make -j4
     $CI_TIME make install
+    echo "Leaving from ${PWD}"
     cd "${BASE_PWD}"
+    echo "Now in ${PWD}"
 fi
 fi
 
@@ -364,11 +384,12 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_d
        (command -v brew >/dev/null 2>&1 && brew ls --versions fty-common-dto >/dev/null 2>&1) || \
        ([ -e "fty-common-dto" ]) \
 ; then
- FOLDER_NAME="fty-common-dto"
 
- if [ -d "$FOLDER_NAME" ]; then
+    FOLDER_NAME="fty-common-dto"
+
+if [ -d "$FOLDER_NAME" ]; then
     echo "$FOLDER_NAME already exist. Skipped." >&2
- else
+else
     echo ""
     BASE_PWD=${PWD}
     echo "`date`: INFO: Building prerequisite 'fty-common-dto' from Git repository..." >&2
@@ -385,7 +406,8 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_d
             $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/fty-common-dto.git $FOLDER_NAME
         fi
     fi
-    cd "./$FOLDER_NAME"
+    echo "Entering in ${PWD}/${FOLDER_NAME}"
+    cd "./${FOLDER_NAME}"
     CCACHE_BASEDIR=${PWD}
     export CCACHE_BASEDIR
         git --no-pager log --oneline -n1
@@ -420,7 +442,9 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list libfty_common_d
     $CI_TIME ./configure "${CONFIG_OPTS[@]}"
     $CI_TIME make -j4
     $CI_TIME make install
+    echo "Leaving from ${PWD}"
     cd "${BASE_PWD}"
+    echo "Now in ${PWD}"
 fi
 fi
 
@@ -430,11 +454,12 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list protobuf-dev >/
        (command -v brew >/dev/null 2>&1 && brew ls --versions protobuf >/dev/null 2>&1) || \
        ([ -e "protobuf" ]) \
 ; then
- FOLDER_NAME="protobuf"
 
- if [ -d "$FOLDER_NAME" ]; then
+    FOLDER_NAME="protobuf"
+
+if [ -d "$FOLDER_NAME" ]; then
     echo "$FOLDER_NAME already exist. Skipped." >&2
- else
+else
     echo ""
     BASE_PWD=${PWD}
     echo "`date`: INFO: Building prerequisite 'protobuf' from Git repository..." >&2
@@ -451,7 +476,8 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list protobuf-dev >/
             $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/protobuf.git $FOLDER_NAME
         fi
     fi
-    cd "./$FOLDER_NAME"
+    echo "Entering in ${PWD}/${FOLDER_NAME}"
+    cd "./${FOLDER_NAME}"
     CCACHE_BASEDIR=${PWD}
     export CCACHE_BASEDIR
         git --no-pager log --oneline -n1
@@ -486,7 +512,9 @@ if ! (command -v dpkg-query >/dev/null 2>&1 && dpkg-query --list protobuf-dev >/
     $CI_TIME ./configure "${CONFIG_OPTS[@]}"
     $CI_TIME make -j4
     $CI_TIME make install
+    echo "Leaving from ${PWD}"
     cd "${BASE_PWD}"
+    echo "Now in ${PWD}"
 fi
 fi
 
