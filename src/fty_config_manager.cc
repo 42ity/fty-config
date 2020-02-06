@@ -143,7 +143,7 @@ namespace config
         for(const auto& featureName: query.features())
         {
             // Get the configuration file path name from class variable m_parameters
-            std::string configurationFileName = AUGEAS_FILES + m_parameters.at(featureName) + ANY_NODES;
+            std::string configurationFileName = AUGEAS_FILES + m_parameters.at(featureName) /*+ ANY_NODES*/;
             log_debug("Configuration file name: %s", configurationFileName.c_str());
             
             cxxtools::SerializationInfo si;
@@ -314,10 +314,15 @@ namespace config
                 const char *value, *label;
                 aug_get(m_aug.get(), matches[i], &value);
                 aug_label(m_aug.get(), matches[i], &label);
+                
+                std::cout << "Value " << value << std::endl;
+                std::cout << "Label " << label << std::endl;
                 if (!value)
                 {
                     // If the value is null, it's a sheet, so it's a member.
                     si.addMember(label);
+                    
+                    ////getConfigurationToJson(si, temp.append(ANY_NODES));
                 }
                 else if (regex_search(temp, arrayMatch, augeasArrayregex) == true && arrayMatch.str(1).length() > 0)
                 {
@@ -345,6 +350,7 @@ namespace config
      */
     std::string ConfigurationManager::findMemberFromMatch(const std::string& input)
     {
+        std::cout << "findMemberFromMatch input " << input << std::endl;
         std::string returnValue = "";
         if (input.length() > 0)
         {
