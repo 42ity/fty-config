@@ -70,7 +70,8 @@ namespace config
             // Utility
             std::string getConfigurationFileName (const std::string& featureName);
             void dumpConfiguration(std::string& path);
-            std::string findMemberFromMatch(const std::string& input);
+            //std::string findMemberFromMatch(const std::string& input);
+            std::vector<std::string> findMemberFromMatch(const std::string& input);
             int getAugeasFlags(std::string& augeasOpts);
             bool isVerstionCompatible(const std::string& version);
         };

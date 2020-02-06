@@ -30,6 +30,7 @@
 #include <sstream>
 #include <vector>
 #include <list>
+#include <list>
 #include <regex>
 
 
@@ -143,7 +144,7 @@ namespace config
         for(const auto& featureName: query.features())
         {
             // Get the configuration file path name from class variable m_parameters
-            std::string configurationFileName = AUGEAS_FILES + m_parameters.at(featureName) /*+ ANY_NODES*/;
+            std::string configurationFileName = AUGEAS_FILES + m_parameters.at(featureName) + ANY_NODES;
             log_debug("Configuration file name: %s", configurationFileName.c_str());
             
             cxxtools::SerializationInfo si;
@@ -298,6 +299,7 @@ namespace config
     {
         std::smatch arrayMatch;
         
+        log_debug("path %s", path.c_str());
         char **matches;
         int nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
@@ -314,15 +316,12 @@ namespace config
                 const char *value, *label;
                 aug_get(m_aug.get(), matches[i], &value);
                 aug_label(m_aug.get(), matches[i], &label);
-                
-                std::cout << "Value " << value << std::endl;
-                std::cout << "Label " << label << std::endl;
+
+                log_debug("Value %s", value);
+                log_debug("Label %s", label);
                 if (!value)
                 {
-                    // If the value is null, it's a sheet, so it's a member.
                     si.addMember(label);
-                    
-                    ////getConfigurationToJson(si, temp.append(ANY_NODES));
                 }
                 else if (regex_search(temp, arrayMatch, augeasArrayregex) == true && arrayMatch.str(1).length() > 0)
                 {
@@ -331,11 +330,28 @@ namespace config
                 }
                 else
                 {
-                    std::string t = findMemberFromMatch(temp);
-                    cxxtools::SerializationInfo *siTemp = si.findMember(t);
+                    std::vector<std::string> members = findMemberFromMatch(temp);
+                    std::string member = members.front();
+                    log_debug("size %d member  %s", members.size(), member.c_str());
+                    cxxtools::SerializationInfo *siTemp = si.findMember(member);
                     if (siTemp)
                     {
-                        siTemp->addMember(label) <<= value;
+                        if (members.size() > 1)
+                        {
+                            cxxtools::SerializationInfo *siTemp2 = &siTemp->addMember(members.at(1));
+                            log_debug("value for array  %s", value);
+                            siTemp2->addMember(label) <<= value;
+                            siTemp = si.findMember(members.at(1));
+                            if (siTemp)
+                            {
+                                 //&si.getMember(members.at(1)) = "";
+                                //siTemp = &cxxtools::SerializationInfo();
+                            }
+                        }
+                        else
+                        {
+                            siTemp->addMember(label) <<= value;
+                        }
                     }
                 }
                 getConfigurationToJson(si, temp.append(ANY_NODES));
@@ -348,26 +364,76 @@ namespace config
      * @param input
      * @return siTemp
      */
-    std::string ConfigurationManager::findMemberFromMatch(const std::string& input)
+    std::vector<std::string> ConfigurationManager::findMemberFromMatch(const std::string& input)
     {
-        std::cout << "findMemberFromMatch input " << input << std::endl;
+        std::list<std::string> list1; 
+        log_debug("findMemberFromMatch input  %s", input.c_str());
         std::string returnValue = "";
         if (input.length() > 0)
-        {
+        { 
+            // Test if the last digit is a number => so it's an array
             // Try to find last /
             std::size_t found = input.find_last_of(FILE_SEPARATOR);
+            
+            std::string rightData = input.substr(found +1, input.length());
+            
+            //log_debug("digit  %s", digit.c_str()); 
+            
+            char cstr[rightData.size() + 1];
+	
+            std::copy(rightData.begin(), rightData.end(), cstr);
+            cstr[rightData.size()] = '\0';
+
+            if (isdigit(cstr[0]))//if (rightData.size() > 0)
+            {
+
+                list1.push_front(rightData); 
+                // Get before
+                std::size_t found2 = input.substr(0, found -1).find_last_of(FILE_SEPARATOR);
+                //log_debug("found  %d", found);
+                //log_debug("found2  %d", found2);
+                //input.substr(found2+ 1, found);
+                //values.push_back(input.substr(found2 + 1, input.length() - 3/*(1 + digit.length())*/));
+                //values.insert(ptr, "notif_email");
+                list1.push_front("notif_email");
+                //log_debug("found  %d", found - (1 + digit.length()));
+                found = input.substr(0, found).find_last_of(FILE_SEPARATOR);
+            }
             if (found != std::string::npos)
             {
                 std::string temp = input.substr(0, found);
                 found = temp.find_last_of(FILE_SEPARATOR);
                 returnValue = temp.substr(found + 1, temp.length());
+                //values.insert(ptr, temp.substr(found + 1, temp.length()));
+                list1.push_front(temp.substr(found + 1, temp.length()));
             }
         }
-        return returnValue;
+        
+        for (auto const& n : list1) {
+            //std::cout << n << '\n';
+        }
+        
+//        for(std::string n : values) {
+//            std::cout << n << '\n';
+//        }
+        
+//        std::vector<int> v{1, 2, 3, 4, 5};
+//        for (std::vector<int>::reverse_iterator it = v.rbegin(); it != v.rend(); ++it)
+//        {
+//            std::cout << *it;
+//        } // prints 54321
+//        for (std::vector<std::string>::reverse_iterator i = values.rbegin(); i != values.rend(); ++i ) { 
+//                 std::cout << *i << '\n';
+//        }
+ 
+        //return returnValue;
+        std::vector<std::string> vec(std::begin(list1), std::end(list1));
+        return vec;
+        //return list1;
     }
 
     /**
-     * Utilitary to dump a configuration.
+     * Utility to dump a configuration.
      * @param path
      */
     void ConfigurationManager::dumpConfiguration(std::string& path)
