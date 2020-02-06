@@ -332,21 +332,19 @@ namespace config
                 {
                     std::vector<std::string> members = findMemberFromMatch(temp);
                     std::string member = members.front();
-                    log_debug("size %d member  %s", members.size(), member.c_str());
                     cxxtools::SerializationInfo *siTemp = si.findMember(member);
                     if (siTemp)
                     {
                         if (members.size() > 1)
                         {
                             cxxtools::SerializationInfo *siTemp2 = &siTemp->addMember(members.at(1));
-                            log_debug("value for array  %s", value);
                             siTemp2->addMember(label) <<= value;
-                            siTemp = si.findMember(members.at(1));
-                            if (siTemp)
-                            {
-                                 //&si.getMember(members.at(1)) = "";
-                                //siTemp = &cxxtools::SerializationInfo();
-                            }
+//                            siTemp = si.findMember(members.at(1));
+//                            if (siTemp)
+//                            {
+//                                 //&si.getMember(members.at(1)) = "";
+//                                //siTemp = &cxxtools::SerializationInfo();
+//                            }
                         }
                         else
                         {
@@ -367,69 +365,35 @@ namespace config
     std::vector<std::string> ConfigurationManager::findMemberFromMatch(const std::string& input)
     {
         std::list<std::string> list1; 
-        log_debug("findMemberFromMatch input  %s", input.c_str());
-        std::string returnValue = "";
         if (input.length() > 0)
         { 
             // Test if the last digit is a number => so it's an array
-            // Try to find last /
             std::size_t found = input.find_last_of(FILE_SEPARATOR);
-            
+            // Get it 
             std::string rightData = input.substr(found +1, input.length());
-            
-            //log_debug("digit  %s", digit.c_str()); 
-            
+            // Test if is digit
             char cstr[rightData.size() + 1];
-	
             std::copy(rightData.begin(), rightData.end(), cstr);
             cstr[rightData.size()] = '\0';
-
-            if (isdigit(cstr[0]))//if (rightData.size() > 0)
+            if (isdigit(cstr[0]))
             {
-
+                //Save digit
                 list1.push_front(rightData); 
                 // Get before
-                std::size_t found2 = input.substr(0, found -1).find_last_of(FILE_SEPARATOR);
-                //log_debug("found  %d", found);
-                //log_debug("found2  %d", found2);
-                //input.substr(found2+ 1, found);
-                //values.push_back(input.substr(found2 + 1, input.length() - 3/*(1 + digit.length())*/));
-                //values.insert(ptr, "notif_email");
-                list1.push_front("notif_email");
-                //log_debug("found  %d", found - (1 + digit.length()));
+                std::size_t foundInputArray = input.substr(0, found -1).find_last_of(FILE_SEPARATOR);                
+                list1.push_front(input.substr(foundInputArray + 1, (found - (foundInputArray + 1))));
                 found = input.substr(0, found).find_last_of(FILE_SEPARATOR);
             }
             if (found != std::string::npos)
             {
                 std::string temp = input.substr(0, found);
-                found = temp.find_last_of(FILE_SEPARATOR);
-                returnValue = temp.substr(found + 1, temp.length());
-                //values.insert(ptr, temp.substr(found + 1, temp.length()));
+                //found = temp.find_last_of(FILE_SEPARATOR);
+                found = (input.substr(0, found)).find_last_of(FILE_SEPARATOR);
                 list1.push_front(temp.substr(found + 1, temp.length()));
             }
         }
-        
-        for (auto const& n : list1) {
-            //std::cout << n << '\n';
-        }
-        
-//        for(std::string n : values) {
-//            std::cout << n << '\n';
-//        }
-        
-//        std::vector<int> v{1, 2, 3, 4, 5};
-//        for (std::vector<int>::reverse_iterator it = v.rbegin(); it != v.rend(); ++it)
-//        {
-//            std::cout << *it;
-//        } // prints 54321
-//        for (std::vector<std::string>::reverse_iterator i = values.rbegin(); i != values.rend(); ++i ) { 
-//                 std::cout << *i << '\n';
-//        }
- 
-        //return returnValue;
         std::vector<std::string> vec(std::begin(list1), std::end(list1));
         return vec;
-        //return list1;
     }
 
     /**
