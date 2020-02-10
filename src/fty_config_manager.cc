@@ -271,24 +271,52 @@ namespace config
             cxxtools::SerializationInfo *member = &(*it);
             std::string memberName = member->name();
             cxxtools::SerializationInfo::Iterator itElement;
+            
             for (itElement = member->begin(); itElement != member->end(); ++itElement)
             {
                 cxxtools::SerializationInfo *element = &(*itElement);
                 std::string elementName = element->name();
-                std::string elementValue;
-                element->getValue(elementValue);
+                std::string elementValue, fullPath;
+
                 // Build augeas full path
-                std::string fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
-                // Set value
-                int setReturn = aug_set(m_aug.get(), fullPath.c_str(), elementValue.c_str());
-                log_debug("Set values, %s = %s => %d", fullPath.c_str(), elementValue.c_str(), setReturn);
-                if (setReturn == -1)
+                if (element->category() == cxxtools::SerializationInfo::Category::Object) 
                 {
-                    log_error("Error to set the following values, %s = %s", fullPath.c_str(), elementValue.c_str());
+                    for (const auto &arrayElemt : *element) 
+                    {
+                        // Build augeas full path
+                        fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName + FILE_SEPARATOR + arrayElemt.name();
+                        arrayElemt.getValue(elementValue);
+                        // Set value
+                        persistValue(fullPath, elementValue);
+                    }
+                }
+                else 
+                {
+                    // Build augeas full path
+                    fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
+                    element->getValue(elementValue);
+                    // Set value
+                    persistValue(fullPath, elementValue);
                 }
             }
         }
         return aug_save(m_aug.get());
+    }
+    
+    /**
+     * Persist value with set augeas API.
+     * @param fullPath
+     * @param value
+     */
+    void ConfigurationManager::persistValue(const std::string& fullPath, const std::string& value)
+    {
+        int setReturn = aug_set(m_aug.get(), fullPath.c_str(), value.c_str());
+        log_debug("Set values, %s = %s => %d", fullPath.c_str(), value.c_str(), setReturn);
+        if (setReturn == -1)
+        {
+            log_error("Error to set the following values, %s = %s", fullPath.c_str(), value.c_str());
+        }
+        
     }
 
     /**
