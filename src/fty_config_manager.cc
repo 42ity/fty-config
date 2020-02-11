@@ -422,67 +422,6 @@ namespace config
         return members;
     }
 
-    
-//    /**
-//     * Find a member
-//     * @param input
-//     * @return siTemp
-//     */
-//    std::string ConfigurationManager::findMemberFromMatch(const std::string& input, const std::string &rootMember)
-//    {
-//        std::string returnValue = "";
-//        if (input.length() > 0)
-//        {
-//            // Try to find last /
-//            std::size_t found = input.find_last_of(FILE_SEPARATOR);
-//            if (found != std::string::npos)
-//            {
-//                std::string temp = input.substr(0, found);
-//                found = temp.find_last_of(FILE_SEPARATOR);
-//                returnValue = temp.substr(found + 1, temp.length());
-//            }
-//        }
-//        return returnValue;
-//    }
-
-    /**
-     * Find a member
-     * @param input
-     * @return siTemp
-     */
-//    std::vector<std::string> ConfigurationManager::findMemberFromMatch(const std::string& input)
-//    {
-//        std::list<std::string> list;
-//        if (input.length() > 0)
-//        { 
-//            // Test if the last digit is a number => so it's an array
-//            std::size_t found = input.find_last_of(FILE_SEPARATOR);
-//            // Get it 
-//            std::string rightData = input.substr(found +1, input.length());
-//            // Test if is digit
-//            char cstr[rightData.size() + 1];
-//            std::copy(rightData.begin(), rightData.end(), cstr);
-//            cstr[rightData.size()] = '\0';
-//            if (isdigit(cstr[0]))
-//            {
-//                //Save digit
-//                list.push_front(rightData); 
-//                // Get before
-//                std::size_t foundInputArray = input.substr(0, found -1).find_last_of(FILE_SEPARATOR);                
-//                list.push_front(input.substr(foundInputArray + 1, (found - (foundInputArray + 1))));
-//                found = input.substr(0, found).find_last_of(FILE_SEPARATOR);
-//            }
-//            if (found != std::string::npos)
-//            {
-//                std::string temp = input.substr(0, found);
-//                found = (input.substr(0, found)).find_last_of(FILE_SEPARATOR);
-//                list.push_front(temp.substr(found + 1, temp.length()));
-//            }
-//        }
-//        std::vector<std::string> vec(std::begin(list), std::end(list));
-//        return vec;
-//    }
-    
     /**
      * Utility to dump a configuration.
      * @param path
