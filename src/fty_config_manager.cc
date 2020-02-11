@@ -39,13 +39,18 @@
 #include <fty_common_json.h>
 #include <memory>
 
-
 using namespace std::placeholders;
 using namespace JSON;
 using namespace dto::srr;
+
 namespace config
 {
  
+    #define FILE_SEPARATOR      "/"
+    #define AUGEAS_FILES        FILE_SEPARATOR "files"
+    #define ANY_NODES           FILE_SEPARATOR "*"
+    #define COMMENTS_DELIMITER  "#"
+
     const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
     
     /**
@@ -143,24 +148,31 @@ namespace config
         
         for(const auto& featureName: query.features())
         {
-            // Get the configuration file path name from class variable m_parameters
-            std::string configurationFileName = AUGEAS_FILES + m_parameters.at(featureName) + ANY_NODES;
-            log_debug("Configuration file name: %s", configurationFileName.c_str());
+            // Get the full configuration file path name from class variable m_parameters
+            std::string fileNameFullPath = AUGEAS_FILES + m_parameters.at(featureName) + ANY_NODES;
+            log_debug("Configuration file name: %s", fileNameFullPath.c_str());
             
-            cxxtools::SerializationInfo si;
-            getConfigurationToJson(si, configurationFileName);
-            
-            Feature feature;
-            feature.set_version(m_configVersion);
-            feature.set_data(JSON::writeToString(si, false));
-            
-            FeatureStatus featureStatus;
-            featureStatus.set_status(Status::SUCCESS);
-            
-            FeatureAndStatus fs;
-            *(fs.mutable_status()) = featureStatus;
-            *(fs.mutable_feature()) = feature; 
-            mapFeaturesData[featureName] = fs;
+            // Get the last pattern
+            std::size_t found = (m_parameters.at(featureName)).find_last_of(FILE_SEPARATOR);
+            if (found != std::string::npos)
+            {
+                cxxtools::SerializationInfo si;
+                std::string confFileName = (m_parameters.at(featureName)).substr(found + 1, (m_parameters.at(featureName)).length());
+                // Get configuration
+                getConfigurationToJson(si, fileNameFullPath, confFileName);
+                // Persist DTO 
+                Feature feature;
+                feature.set_version(m_configVersion);
+                feature.set_data(JSON::writeToString(si, false));
+
+                FeatureStatus featureStatus;
+                featureStatus.set_status(Status::SUCCESS);
+
+                FeatureAndStatus fs;
+                *(fs.mutable_status()) = featureStatus;
+                *(fs.mutable_feature()) = feature; 
+                mapFeaturesData[featureName] = fs;
+            }
         }
         log_debug("Save configuration done");
         return (createSaveResponse(mapFeaturesData, m_configVersion)).save();
@@ -278,21 +290,19 @@ namespace config
                 std::string elementName = element->name();
                 std::string elementValue, fullPath;
 
-                // Build augeas full path
+                // Build augeas full path and set value
                 if (element->category() == cxxtools::SerializationInfo::Category::Object) 
                 {
-                    for (const auto &arrayElemt : *element) 
+                    for (const auto &arrayElem : *element) 
                     {
-                        // Build augeas full path
-                        fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName + FILE_SEPARATOR + arrayElemt.name();
-                        arrayElemt.getValue(elementValue);
+                        fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName + FILE_SEPARATOR + arrayElem.name();
+                        arrayElem.getValue(elementValue);
                         // Set value
                         persistValue(fullPath, elementValue);
                     }
                 }
                 else 
                 {
-                    // Build augeas full path
                     fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
                     element->getValue(elementValue);
                     // Set value
@@ -323,11 +333,9 @@ namespace config
      * Get a configuration serialized to json format.
      * @param path
      */
-    void ConfigurationManager::getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path)
+    void ConfigurationManager::getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path, std::string& rootMember)
     {
         std::smatch arrayMatch;
-        
-        log_debug("path %s", path.c_str());
         char **matches;
         int nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
@@ -344,86 +352,137 @@ namespace config
                 const char *value, *label;
                 aug_get(m_aug.get(), matches[i], &value);
                 aug_label(m_aug.get(), matches[i], &label);
-
-                log_debug("Value %s", value);
-                log_debug("Label %s", label);
-                if (!value)
+                
+                if (value)
                 {
-                    si.addMember(label);
+                    // Find all members to insert
+                    std::vector<std::string> members = findMembersFromMatch(temp, rootMember);        
+                    cxxtools::SerializationInfo *siTemp = &(si);
+                    for (const auto elem: members) 
+                    {
+                        cxxtools::SerializationInfo *siTmp = siTemp->findMember(elem);
+                        if (!siTmp)
+                        {
+                            if (elem.compare(members.back()) != 0)
+                            {
+                                siTmp = &(siTemp->addMember(elem));
+                                siTemp = siTmp;
+                            }
+                            else
+                            {
+                                siTemp->addMember(label) <<= value;
+                                siTmp = siTemp->findMember(members.front());
+                                siTemp = siTmp;
+                            }
+                        }
+                        else
+                        {
+                            // Reset pointer
+                            siTmp = siTemp->findMember(elem);
+                            siTemp = siTmp;
+                        }
+                    }
                 }
-                else if (regex_search(temp, arrayMatch, augeasArrayregex) == true && arrayMatch.str(1).length() > 0)
+                else if (regex_search(temp, arrayMatch, augeasArrayregex) == true && arrayMatch.str(1).length() > 0 )
                 {
                     // In an array case, it's member too.
                     si.addMember(arrayMatch.str(1));
                 }
-                else
-                {
-                    std::vector<std::string> members = findMemberFromMatch(temp);
-                    std::string member = members.front();
-                    cxxtools::SerializationInfo *siTemp = si.findMember(member);
-                    if (siTemp)
-                    {
-                        if (members.size() > 1)
-                        {
-                            cxxtools::SerializationInfo *siTemp2 = &siTemp->addMember(members.at(1));
-                            siTemp2->addMember(label) <<= value;
-//                            siTemp = si.findMember(members.at(1));
-//                            if (siTemp)
-//                            {
-//                                 //&si.getMember(members.at(1)) = "";
-//                                //siTemp = &cxxtools::SerializationInfo();
-//                            }
-                        }
-                        else
-                        {
-                            siTemp->addMember(label) <<= value;
-                        }
-                    }
-                }
-                getConfigurationToJson(si, temp.append(ANY_NODES));
+                getConfigurationToJson(si, temp.append(ANY_NODES), rootMember);
             }
         }
     }
+    
+    /**
+     * Find a members
+     * @param input
+     * @return siTemp
+     */
+    std::vector<std::string> ConfigurationManager::findMembersFromMatch(const std::string& input, const std::string& rootMember)
+    {
+        std::vector<std::string> members;   
+        if (input.length() > 0 )
+        {
+            // Try to find root member
+            std::size_t found = input.find(rootMember);
+            if (found != std::string::npos)
+            {
+                std::string remain = input.substr(found + rootMember.size(), input.size());
+                std::string tmp; 
+                std::stringstream ss(remain);
+                while(std::getline(ss, tmp, FILE_SEPARATOR[0]))
+                {
+                    if (tmp.size() > 0)
+                    {
+                        members.push_back(tmp);
+                    }
+                }
+            }
+        }
+        return members;
+    }
+
+    
+//    /**
+//     * Find a member
+//     * @param input
+//     * @return siTemp
+//     */
+//    std::string ConfigurationManager::findMemberFromMatch(const std::string& input, const std::string &rootMember)
+//    {
+//        std::string returnValue = "";
+//        if (input.length() > 0)
+//        {
+//            // Try to find last /
+//            std::size_t found = input.find_last_of(FILE_SEPARATOR);
+//            if (found != std::string::npos)
+//            {
+//                std::string temp = input.substr(0, found);
+//                found = temp.find_last_of(FILE_SEPARATOR);
+//                returnValue = temp.substr(found + 1, temp.length());
+//            }
+//        }
+//        return returnValue;
+//    }
 
     /**
      * Find a member
      * @param input
      * @return siTemp
      */
-    std::vector<std::string> ConfigurationManager::findMemberFromMatch(const std::string& input)
-    {
-        std::list<std::string> list1; 
-        if (input.length() > 0)
-        { 
-            // Test if the last digit is a number => so it's an array
-            std::size_t found = input.find_last_of(FILE_SEPARATOR);
-            // Get it 
-            std::string rightData = input.substr(found +1, input.length());
-            // Test if is digit
-            char cstr[rightData.size() + 1];
-            std::copy(rightData.begin(), rightData.end(), cstr);
-            cstr[rightData.size()] = '\0';
-            if (isdigit(cstr[0]))
-            {
-                //Save digit
-                list1.push_front(rightData); 
-                // Get before
-                std::size_t foundInputArray = input.substr(0, found -1).find_last_of(FILE_SEPARATOR);                
-                list1.push_front(input.substr(foundInputArray + 1, (found - (foundInputArray + 1))));
-                found = input.substr(0, found).find_last_of(FILE_SEPARATOR);
-            }
-            if (found != std::string::npos)
-            {
-                std::string temp = input.substr(0, found);
-                //found = temp.find_last_of(FILE_SEPARATOR);
-                found = (input.substr(0, found)).find_last_of(FILE_SEPARATOR);
-                list1.push_front(temp.substr(found + 1, temp.length()));
-            }
-        }
-        std::vector<std::string> vec(std::begin(list1), std::end(list1));
-        return vec;
-    }
-
+//    std::vector<std::string> ConfigurationManager::findMemberFromMatch(const std::string& input)
+//    {
+//        std::list<std::string> list;
+//        if (input.length() > 0)
+//        { 
+//            // Test if the last digit is a number => so it's an array
+//            std::size_t found = input.find_last_of(FILE_SEPARATOR);
+//            // Get it 
+//            std::string rightData = input.substr(found +1, input.length());
+//            // Test if is digit
+//            char cstr[rightData.size() + 1];
+//            std::copy(rightData.begin(), rightData.end(), cstr);
+//            cstr[rightData.size()] = '\0';
+//            if (isdigit(cstr[0]))
+//            {
+//                //Save digit
+//                list.push_front(rightData); 
+//                // Get before
+//                std::size_t foundInputArray = input.substr(0, found -1).find_last_of(FILE_SEPARATOR);                
+//                list.push_front(input.substr(foundInputArray + 1, (found - (foundInputArray + 1))));
+//                found = input.substr(0, found).find_last_of(FILE_SEPARATOR);
+//            }
+//            if (found != std::string::npos)
+//            {
+//                std::string temp = input.substr(0, found);
+//                found = (input.substr(0, found)).find_last_of(FILE_SEPARATOR);
+//                list.push_front(temp.substr(found + 1, temp.length()));
+//            }
+//        }
+//        std::vector<std::string> vec(std::begin(list), std::end(list));
+//        return vec;
+//    }
+    
     /**
      * Utility to dump a configuration.
      * @param path
@@ -497,6 +556,11 @@ namespace config
         return returnValue;
     }
     
+    /**
+     * Test if the version is compatible
+     * @param version
+     * @return True if the version is compatible, otherwise false.
+     */
     bool ConfigurationManager::isVerstionCompatible(const std::string& version)
     {
         bool comptible = false;
