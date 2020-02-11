@@ -30,7 +30,6 @@
 #include <sstream>
 #include <vector>
 #include <list>
-#include <list>
 #include <regex>
 
 
@@ -394,14 +393,14 @@ namespace config
     }
     
     /**
-     * Find a members
+     * Find members
      * @param input
      * @return siTemp
      */
     std::vector<std::string> ConfigurationManager::findMembersFromMatch(const std::string& input, const std::string& rootMember)
     {
         std::vector<std::string> members;   
-        if (input.length() > 0 )
+        if (input.length() > 0)
         {
             // Try to find root member
             std::size_t found = input.find(rootMember);
