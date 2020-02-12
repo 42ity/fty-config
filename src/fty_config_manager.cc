@@ -38,13 +38,18 @@
 #include <fty_common_json.h>
 #include <memory>
 
-
 using namespace std::placeholders;
 using namespace JSON;
 using namespace dto::srr;
+
 namespace config
 {
  
+    #define FILE_SEPARATOR      "/"
+    #define AUGEAS_FILES        FILE_SEPARATOR "files"
+    #define ANY_NODES           FILE_SEPARATOR "*"
+    #define COMMENTS_DELIMITER  "#"
+
     const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
     
     /**
@@ -142,24 +147,31 @@ namespace config
         
         for(const auto& featureName: query.features())
         {
-            // Get the configuration file path name from class variable m_parameters
-            std::string configurationFileName = AUGEAS_FILES + m_parameters.at(featureName) + ANY_NODES;
-            log_debug("Configuration file name: %s", configurationFileName.c_str());
+            // Get the full configuration file path name from class variable m_parameters
+            std::string fileNameFullPath = AUGEAS_FILES + m_parameters.at(featureName) + ANY_NODES;
+            log_debug("Configuration file name: %s", fileNameFullPath.c_str());
             
-            cxxtools::SerializationInfo si;
-            getConfigurationToJson(si, configurationFileName);
-            
-            Feature feature;
-            feature.set_version(m_configVersion);
-            feature.set_data(JSON::writeToString(si, false));
-            
-            FeatureStatus featureStatus;
-            featureStatus.set_status(Status::SUCCESS);
-            
-            FeatureAndStatus fs;
-            *(fs.mutable_status()) = featureStatus;
-            *(fs.mutable_feature()) = feature; 
-            mapFeaturesData[featureName] = fs;
+            // Get the last pattern
+            std::size_t found = (m_parameters.at(featureName)).find_last_of(FILE_SEPARATOR);
+            if (found != std::string::npos)
+            {
+                cxxtools::SerializationInfo si;
+                std::string confFileName = (m_parameters.at(featureName)).substr(found + 1, (m_parameters.at(featureName)).length());
+                // Get configuration
+                getConfigurationToJson(si, fileNameFullPath, confFileName);
+                // Persist DTO 
+                Feature feature;
+                feature.set_version(m_configVersion);
+                feature.set_data(JSON::writeToString(si, false));
+
+                FeatureStatus featureStatus;
+                featureStatus.set_status(Status::SUCCESS);
+
+                FeatureAndStatus fs;
+                *(fs.mutable_status()) = featureStatus;
+                *(fs.mutable_feature()) = feature; 
+                mapFeaturesData[featureName] = fs;
+            }
         }
         log_debug("Save configuration done");
         return (createSaveResponse(mapFeaturesData, m_configVersion)).save();
@@ -270,34 +282,59 @@ namespace config
             cxxtools::SerializationInfo *member = &(*it);
             std::string memberName = member->name();
             cxxtools::SerializationInfo::Iterator itElement;
+            
             for (itElement = member->begin(); itElement != member->end(); ++itElement)
             {
                 cxxtools::SerializationInfo *element = &(*itElement);
                 std::string elementName = element->name();
-                std::string elementValue;
-                element->getValue(elementValue);
-                // Build augeas full path
-                std::string fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
-                // Set value
-                int setReturn = aug_set(m_aug.get(), fullPath.c_str(), elementValue.c_str());
-                log_debug("Set values, %s = %s => %d", fullPath.c_str(), elementValue.c_str(), setReturn);
-                if (setReturn == -1)
+                std::string elementValue, fullPath;
+
+                // Build augeas full path and set value
+                if (element->category() == cxxtools::SerializationInfo::Category::Object) 
                 {
-                    log_error("Error to set the following values, %s = %s", fullPath.c_str(), elementValue.c_str());
+                    for (const auto &arrayElem : *element) 
+                    {
+                        fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName + FILE_SEPARATOR + arrayElem.name();
+                        arrayElem.getValue(elementValue);
+                        // Set value
+                        persistValue(fullPath, elementValue);
+                    }
+                }
+                else 
+                {
+                    fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
+                    element->getValue(elementValue);
+                    // Set value
+                    persistValue(fullPath, elementValue);
                 }
             }
         }
         return aug_save(m_aug.get());
+    }
+    
+    /**
+     * Persist value with set augeas API.
+     * @param fullPath
+     * @param value
+     */
+    void ConfigurationManager::persistValue(const std::string& fullPath, const std::string& value)
+    {
+        int setReturn = aug_set(m_aug.get(), fullPath.c_str(), value.c_str());
+        log_debug("Set values, %s = %s => %d", fullPath.c_str(), value.c_str(), setReturn);
+        if (setReturn == -1)
+        {
+            log_error("Error to set the following values, %s = %s", fullPath.c_str(), value.c_str());
+        }
+        
     }
 
     /**
      * Get a configuration serialized to json format.
      * @param path
      */
-    void ConfigurationManager::getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path)
+    void ConfigurationManager::getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path, std::string& rootMember)
     {
         std::smatch arrayMatch;
-        
         char **matches;
         int nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
@@ -314,54 +351,78 @@ namespace config
                 const char *value, *label;
                 aug_get(m_aug.get(), matches[i], &value);
                 aug_label(m_aug.get(), matches[i], &label);
-                if (!value)
+                
+                if (value)
                 {
-                    // If the value is null, it's a sheet, so it's a member.
-                    si.addMember(label);
+                    // Find all members to insert
+                    std::vector<std::string> members = findMembersFromMatch(temp, rootMember);        
+                    cxxtools::SerializationInfo *siTemp = &(si);
+                    for (const auto elem: members) 
+                    {
+                        cxxtools::SerializationInfo *siTmp = siTemp->findMember(elem);
+                        if (!siTmp)
+                        {
+                            if (elem.compare(members.back()) != 0)
+                            {
+                                siTmp = &(siTemp->addMember(elem));
+                                siTemp = siTmp;
+                            }
+                            else
+                            {
+                                siTemp->addMember(label) <<= value;
+                                siTmp = siTemp->findMember(members.front());
+                                siTemp = siTmp;
+                            }
+                        }
+                        else
+                        {
+                            // Reset pointer
+                            siTmp = siTemp->findMember(elem);
+                            siTemp = siTmp;
+                        }
+                    }
                 }
-                else if (regex_search(temp, arrayMatch, augeasArrayregex) == true && arrayMatch.str(1).length() > 0)
+                else if (regex_search(temp, arrayMatch, augeasArrayregex) == true && arrayMatch.str(1).length() > 0 )
                 {
                     // In an array case, it's member too.
                     si.addMember(arrayMatch.str(1));
                 }
-                else
-                {
-                    std::string t = findMemberFromMatch(temp);
-                    cxxtools::SerializationInfo *siTemp = si.findMember(t);
-                    if (siTemp)
-                    {
-                        siTemp->addMember(label) <<= value;
-                    }
-                }
-                getConfigurationToJson(si, temp.append(ANY_NODES));
+                getConfigurationToJson(si, temp.append(ANY_NODES), rootMember);
             }
         }
     }
-
+    
     /**
-     * Find a member
+     * Find members
      * @param input
      * @return siTemp
      */
-    std::string ConfigurationManager::findMemberFromMatch(const std::string& input)
+    std::vector<std::string> ConfigurationManager::findMembersFromMatch(const std::string& input, const std::string& rootMember)
     {
-        std::string returnValue = "";
+        std::vector<std::string> members;   
         if (input.length() > 0)
         {
-            // Try to find last /
-            std::size_t found = input.find_last_of(FILE_SEPARATOR);
+            // Try to find root member
+            std::size_t found = input.find(rootMember);
             if (found != std::string::npos)
             {
-                std::string temp = input.substr(0, found);
-                found = temp.find_last_of(FILE_SEPARATOR);
-                returnValue = temp.substr(found + 1, temp.length());
+                std::string remain = input.substr(found + rootMember.size(), input.size());
+                std::string tmp; 
+                std::stringstream ss(remain);
+                while(std::getline(ss, tmp, FILE_SEPARATOR[0]))
+                {
+                    if (tmp.size() > 0)
+                    {
+                        members.push_back(tmp);
+                    }
+                }
             }
         }
-        return returnValue;
+        return members;
     }
 
     /**
-     * Utilitary to dump a configuration.
+     * Utility to dump a configuration.
      * @param path
      */
     void ConfigurationManager::dumpConfiguration(std::string& path)
@@ -433,6 +494,11 @@ namespace config
         return returnValue;
     }
     
+    /**
+     * Test if the version is compatible
+     * @param version
+     * @return True if the version is compatible, otherwise false.
+     */
     bool ConfigurationManager::isVerstionCompatible(const std::string& version)
     {
         bool comptible = false;

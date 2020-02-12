@@ -34,11 +34,6 @@
 
 namespace config
 {
-    #define FILE_SEPARATOR      "/"
-    #define ANY_NODES           FILE_SEPARATOR "*"
-    #define COMMENTS_DELIMITER  "#"
-    #define AUGEAS_FILES        "/files"
-    
     class ConfigurationManager 
     {
 
@@ -63,16 +58,17 @@ namespace config
             dto::srr::RestoreResponse restoreConfiguration(const dto::srr::RestoreQuery& query);
             dto::srr::ResetResponse resetConfiguration(const dto::srr::ResetQuery& query);
             
-            void getConfigurationToJson(cxxtools::SerializationInfo& si, std::string &path);
+            void getConfigurationToJson(cxxtools::SerializationInfo& si, std::string &path, std::string &rootMember);
             int setConfiguration(cxxtools::SerializationInfo& si, const std::string &path);
             void sendResponse(const messagebus::Message& msg, const dto::UserData& userData);
 
             // Utility
             std::string getConfigurationFileName (const std::string& featureName);
             void dumpConfiguration(std::string& path);
-            std::string findMemberFromMatch(const std::string& input);
+            std::vector<std::string> findMembersFromMatch(const std::string& input, const std::string& rootMember);
             int getAugeasFlags(std::string& augeasOpts);
             bool isVerstionCompatible(const std::string& version);
+            void persistValue(const std::string& fullPath, const std::string& value);
         };
         
 } // namespace config
