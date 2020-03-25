@@ -1,7 +1,13 @@
 [Unit]
-Description=fty-config service
-After=network.target malamute.service
+# In case of recovering a deployment from backups, this does not
+# restore EULA acceptance nor license. So still needs (for now)
+# to go through the standard wizard + EULA as a prerequisite.
+Description=fty-config service: Save, Restore and Reset
+After=malamute.service network.target fty-license-accepted.target
 Requires=malamute.service network.target
+# Enable FLA... once, do not keep retrying if EULA is not accepted yet
+Wants=fty-license-accepted.target
+Requisite=fty-license-accepted.target
 PartOf=bios.target
 
 [Service]
