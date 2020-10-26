@@ -44,14 +44,20 @@ using namespace dto::srr;
 
 namespace config
 {
- 
+    //__>> HOTFIX Network config is not a proper JSON due to several "iface" attribut in the Json
+    // Solution: index the iface (rename ifacename) for the output and remove the index when restore
+    //Functions
+    static std::string createIndexForIface(std::string json);
+    static std::string removeIndexForIface(const std::string & json);
+    //__<< HOTFIX
+
     #define FILE_SEPARATOR      "/"
     #define AUGEAS_FILES        FILE_SEPARATOR "files"
     #define ANY_NODES           FILE_SEPARATOR "*"
     #define COMMENTS_DELIMITER  "#"
 
     const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
-    
+
     /**
      * Constructor
      * @param parameters
@@ -83,14 +89,14 @@ namespace config
             // Message bus init
             m_msgBus = std::unique_ptr<messagebus::MessageBus>(messagebus::MlmMessageBus(m_parameters.at(ENDPOINT_KEY), m_parameters.at(AGENT_NAME_KEY)));
             m_msgBus->connect();
-            
+
              // Bind all processor handler.
             m_processor.saveHandler = std::bind(&ConfigurationManager::saveConfiguration, this, _1);
             m_processor.restoreHandler = std::bind(&ConfigurationManager::restoreConfiguration, this, _1);
             m_processor.resetHandler = std::bind(&ConfigurationManager::resetConfiguration, this, _1);
             // Srr version
             m_configVersion = m_parameters.at(CONFIG_VERSION_KEY);
-            
+
             // Listen all incoming request
             auto fct = std::bind(&ConfigurationManager::handleRequest, this, _1);
             m_msgBus->receive(m_parameters.at(QUEUE_NAME_KEY), fct);
@@ -108,7 +114,7 @@ namespace config
      * Handle any request
      * @param sender
      * @param payload
-     * @return 
+     * @return
      */
     void ConfigurationManager::handleRequest(messagebus::Message msg)
     {
@@ -117,7 +123,7 @@ namespace config
             log_debug("Configuration handle request");
             // Load augeas for any request (to avoid any cache).
             aug_load(m_aug.get());
-            
+
             dto::UserData data = msg.userData();
             // Get the query
             Query query;
@@ -128,13 +134,13 @@ namespace config
             dto::UserData dataResponse;
             dataResponse << response;
             sendResponse(msg, dataResponse);
-        }        
+        }
         catch (std::exception& ex)
         {
             log_error(ex.what());
         }
     }
-    
+
     /**
      * Save an Ipm2 configuration
      * @param msg
@@ -144,13 +150,13 @@ namespace config
     {
         log_debug("Saving configuration");
         std::map<FeatureName, FeatureAndStatus> mapFeaturesData;
-        
+
         for(const auto& featureName: query.features())
         {
             // Get the full configuration file path name from class variable m_parameters
             std::string fileNameFullPath = AUGEAS_FILES + m_parameters.at(featureName) + ANY_NODES;
             log_debug("Configuration file name: %s", fileNameFullPath.c_str());
-            
+
             // Get the last pattern
             std::size_t found = (m_parameters.at(featureName)).find_last_of(FILE_SEPARATOR);
             if (found != std::string::npos)
@@ -159,24 +165,24 @@ namespace config
                 std::string confFileName = (m_parameters.at(featureName)).substr(found + 1, (m_parameters.at(featureName)).length());
                 // Get configuration
                 getConfigurationToJson(si, fileNameFullPath, confFileName);
-                // Persist DTO 
+                // Persist DTO
                 Feature feature;
                 feature.set_version(m_configVersion);
-                feature.set_data(JSON::writeToString(si, false));
+                feature.set_data(createIndexForIface(JSON::writeToString(si, false)));
 
                 FeatureStatus featureStatus;
                 featureStatus.set_status(Status::SUCCESS);
 
                 FeatureAndStatus fs;
                 *(fs.mutable_status()) = featureStatus;
-                *(fs.mutable_feature()) = feature; 
+                *(fs.mutable_feature()) = feature;
                 mapFeaturesData[featureName] = fs;
             }
         }
         log_debug("Save configuration done");
         return (createSaveResponse(mapFeaturesData, m_configVersion)).save();
     }
-    
+
     /**
      * Restore an Ipm2 Configuration
      * @param msg
@@ -186,10 +192,10 @@ namespace config
     {
         log_debug("Restoring configuration...");
         std::map<FeatureName, FeatureStatus> mapStatus;
-        
+
         RestoreQuery query1 = query;
         google::protobuf::Map<FeatureName, Feature>& mapFeaturesData = *(query1.mutable_map_features_data());
-        
+
         for(const auto& item: mapFeaturesData)
         {
             const std::string& featureName = item.first;
@@ -202,14 +208,14 @@ namespace config
                 log_debug("Restoring configuration for: %s, with configuration file: %s", featureName.c_str(), configurationFileName.c_str());
 
                 cxxtools::SerializationInfo siData;
-                JSON::readFromString(feature.data(), siData);
+                JSON::readFromString(removeIndexForIface(feature.data()), siData);
                 // Get data member
                 int returnValue = setConfiguration(siData, configurationFileName);
                 if (returnValue == 0)
                 {
                     log_debug("Restore configuration done: %s succeed!", featureName.c_str());
                     featureStatus.set_status(Status::SUCCESS);
-                } 
+                }
                 else
                 {
                     featureStatus.set_status(Status::FAILED);
@@ -240,7 +246,7 @@ namespace config
     {
         throw ConfigurationException("Not implemented yet!");
     }
-    
+
     /**
      * Send response on message bus.
      * @param msg
@@ -272,7 +278,7 @@ namespace config
      * Set a configuration.
      * @param si
      * @param path
-     * @return 
+     * @return
      */
     int ConfigurationManager::setConfiguration(cxxtools::SerializationInfo& si, const std::string& path)
     {
@@ -282,7 +288,7 @@ namespace config
             cxxtools::SerializationInfo *member = &(*it);
             std::string memberName = member->name();
             cxxtools::SerializationInfo::Iterator itElement;
-            
+
             for (itElement = member->begin(); itElement != member->end(); ++itElement)
             {
                 cxxtools::SerializationInfo *element = &(*itElement);
@@ -290,9 +296,9 @@ namespace config
                 std::string elementValue, fullPath;
 
                 // Build augeas full path and set value
-                if (element->category() == cxxtools::SerializationInfo::Category::Object) 
+                if (element->category() == cxxtools::SerializationInfo::Category::Object)
                 {
-                    for (const auto &arrayElem : *element) 
+                    for (const auto &arrayElem : *element)
                     {
                         fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName + FILE_SEPARATOR + arrayElem.name();
                         arrayElem.getValue(elementValue);
@@ -300,7 +306,7 @@ namespace config
                         persistValue(fullPath, elementValue);
                     }
                 }
-                else 
+                else
                 {
                     fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
                     element->getValue(elementValue);
@@ -311,7 +317,7 @@ namespace config
         }
         return aug_save(m_aug.get());
     }
-    
+
     /**
      * Persist value with set augeas API.
      * @param fullPath
@@ -325,7 +331,7 @@ namespace config
         {
             log_error("Error to set the following values, %s = %s", fullPath.c_str(), value.c_str());
         }
-        
+
     }
 
     /**
@@ -351,13 +357,13 @@ namespace config
                 const char *value, *label;
                 aug_get(m_aug.get(), matches[i], &value);
                 aug_label(m_aug.get(), matches[i], &label);
-                
+
                 if (value)
                 {
                     // Find all members to insert
-                    std::vector<std::string> members = findMembersFromMatch(temp, rootMember);        
+                    std::vector<std::string> members = findMembersFromMatch(temp, rootMember);
                     cxxtools::SerializationInfo *siTemp = &(si);
-                    for (const auto elem: members) 
+                    for (const auto elem: members)
                     {
                         cxxtools::SerializationInfo *siTmp = siTemp->findMember(elem);
                         if (!siTmp)
@@ -391,7 +397,7 @@ namespace config
             }
         }
     }
-    
+
     /**
      * Find members
      * @param input
@@ -399,7 +405,7 @@ namespace config
      */
     std::vector<std::string> ConfigurationManager::findMembersFromMatch(const std::string& input, const std::string& rootMember)
     {
-        std::vector<std::string> members;   
+        std::vector<std::string> members;
         if (input.length() > 0)
         {
             // Try to find root member
@@ -407,7 +413,7 @@ namespace config
             if (found != std::string::npos)
             {
                 std::string remain = input.substr(found + rootMember.size(), input.size());
-                std::string tmp; 
+                std::string tmp;
                 std::stringstream ss(remain);
                 while(std::getline(ss, tmp, FILE_SEPARATOR[0]))
                 {
@@ -451,7 +457,7 @@ namespace config
     /**
      * Get augeas tool flag
      * @param augeasOpts
-     * @return 
+     * @return
      */
     int ConfigurationManager::getAugeasFlags(std::string& augeasOpts)
     {
@@ -469,7 +475,7 @@ namespace config
         augFlags["AUG_ENABLE_SPAN"] = AUG_ENABLE_SPAN;
         augFlags["AUG_NO_ERR_CLOSE"] = AUG_NO_ERR_CLOSE;
         augFlags["AUG_TRACE_MODULE_LOADING"] = AUG_TRACE_MODULE_LOADING;
-        
+
         if (augeasOpts.size() > 1 )
         {
             // Replace '|' by ' '
@@ -493,7 +499,7 @@ namespace config
         }
         return returnValue;
     }
-    
+
     /**
      * Test if the version is compatible
      * @param version
@@ -504,11 +510,39 @@ namespace config
         bool comptible = false;
         int configVersion = std::stoi(m_configVersion);
         int requestVersion = std::stoi(version);
-        
+
         if (configVersion >= requestVersion)
         {
             comptible = true;
         }
         return comptible;
     }
+
+    //__>> HOTFIX Network config is not a proper JSON due to several "iface" attribut in the Json
+    std::string createIndexForIface(std::string json)
+    {
+        std::regex regex("\"iface\"");
+        std::smatch submatch;
+
+        int index = 0;
+        std::string output;
+
+        // Search all interface
+        while (std::regex_search(json, submatch, regex)) {
+            // Build resulting string
+            output += std::string(submatch.prefix()) +  "\"ifacename[" + std::to_string(index++) + "]\"";
+            // Continue to search with the rest of the string
+            json = submatch.suffix();
+        }
+        // If there is still a suffix, add it
+        output += json;
+
+        return output;
+    }
+
+    std::string removeIndexForIface(const std::string & json)
+    {
+        return std::regex_replace(json, std::regex("\"ifacename\\[.*\\]\""), "\"iface\"");
+    }
+    //__<< HOTFIX
 }
