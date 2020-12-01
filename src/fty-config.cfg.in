@@ -24,7 +24,7 @@ available-features
 
 augeas
     lensPath = /usr/share/fty/lenses/
-    augeasOptions = AUG_NONE # Values availabes separate by '|' AUG_NONE AUG_TRACE_MODULE_LOADING AUG_SAVE_BACKUP
+    augeasOptions = AUG_SAVE_BACKUP # Values availabes separate by '|' AUG_NONE AUG_TRACE_MODULE_LOADING AUG_SAVE_BACKUP
 
 config
     version = 1.0 # Config version.
