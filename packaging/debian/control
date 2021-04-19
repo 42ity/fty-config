@@ -23,7 +23,8 @@ Priority:       optional
 Maintainer:     fty-config Developers <eatonipcopensource@eaton.com>
 Standards-Version: 4.0.1.0
 Build-Depends: debhelper (>= 9),
-    pkg-config,
+    cmake (>=3.0),
+    fty-cmake-dev,
     libaugeas-dev,
     libfty-common-logging-dev,
     libcxxtools-dev,
@@ -32,18 +33,7 @@ Build-Depends: debhelper (>= 9),
     libfty-common-messagebus-dev,
     libfty-common-dto-dev,
     libprotobuf-dev,
-    gcc (>= 4.9.0), g++ (>= 4.9.0),
-    systemd,
-    dh-systemd,
-    asciidoc-base | asciidoc, xmlto,
-    dh-autoreconf
-
-Package: libfty-config1
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: fty-config shared library
- This package contains shared library for fty-config:
- configuration agent for 42ity ecosystem
+    systemd
 
 Package: fty-config
 Architecture: any
@@ -52,13 +42,3 @@ Description: runnable binaries from fty-config
  Main package for fty-config:
  configuration agent for 42ity ecosystem
 
-Package: fty-config-dbg
-Architecture: any
-Section: debug
-Priority: optional
-Depends:
-    fty-config (= ${binary:Version}),
-    ${misc:Depends}
-Description: fty-config debugging symbols
- This package contains the debugging symbols for fty-config:
- configuration agent for 42ity ecosystem.
