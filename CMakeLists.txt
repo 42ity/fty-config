@@ -3,7 +3,7 @@ cmake_policy(VERSION 3.13)
 
 ########################################################################################################################
 
-project(fty_config
+project(fty-config
     VERSION 1.0.0
     DESCRIPTION "Configuration agent for 42ITy ecosystem"
 )
@@ -36,14 +36,14 @@ etn_target(exe ${PROJECT_NAME}
 install(FILES zconfig.aug DESTINATION /usr/share/bios/lenses)
 ########################################################################################################################
 etn_configure_file(
-    fty-config.service.in
+    ${PROJECT_NAME}.service.in
 
     TARGET      ${PROJECT_NAME}
     DESTINATION /usr/lib/systemd/system/
 )
 ########################################################################################################################
 etn_configure_file(
-    fty-config.cfg.in
+    ${PROJECT_NAME}.cfg.in
 
     TARGET      ${PROJECT_NAME}
     DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/fty-config/
