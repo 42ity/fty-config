@@ -33,19 +33,19 @@ etn_target(exe ${PROJECT_NAME}
 )
 
 ########################################################################################################################
-install(FILES zconfig.aug DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/bios/lenses)
+install(FILES zconfig.aug DESTINATION /usr/share/bios/lenses)
 ########################################################################################################################
 etn_configure_file(
     fty-config.service.in
 
     TARGET      ${PROJECT_NAME}
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system/
+    DESTINATION /usr/lib/systemd/system/
 )
 ########################################################################################################################
 etn_configure_file(
     fty-config.cfg.in
 
     TARGET      ${PROJECT_NAME}
-    DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/fty-config/
+    DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/fty-config/
 )
 ########################################################################################################################
