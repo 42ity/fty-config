@@ -25,20 +25,22 @@ Standards-Version: 4.0.1.0
 Build-Depends: debhelper (>= 9),
     cmake (>=3.0),
     fty-cmake-dev,
+    pkg-config,
     libaugeas-dev,
-    libfty-common-logging-dev,
+    libprotobuf-dev,
     libcxxtools-dev,
     libfty-common-dev,
+    libfty-common-logging-dev,
     libfty-common-mlm-dev,
     libfty-common-messagebus-dev,
     libfty-common-dto-dev,
-    libprotobuf-dev,
-    systemd
+    systemd,
+    asciidoc-base | asciidoc, xmlto,
+    dh-autoreconf
 
 Package: fty-config
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: runnable binaries from fty-config
  Main package for fty-config:
  configuration agent for 42ity ecosystem
-
