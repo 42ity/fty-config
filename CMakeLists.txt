@@ -32,13 +32,21 @@ etn_target(exe ${PROJECT_NAME}
         fty_common_mlm
 )
 
+########################################################################################################################
+install(FILES zconfig.aug DESTINATION /usr/share/bios/lenses)
+########################################################################################################################
+etn_configure_file(
+    ${PROJECT_NAME}.service.in
 # Install
 
-# lenses
-install(FILES ${PROJECT_SOURCE_DIR}/zconfig.aug DESTINATION ${CMAKE_INSTALL_FULL_DATAROOTDIR}/bios/lenses)
-# cfg
-configure_file("${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.service.in" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.service" @ONLY)
-install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.service" DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/systemd/system)
-# service
-configure_file("${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.cfg.in" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.cfg" @ONLY)
-install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.cfg" DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/${PROJECT_NAME})
+    TARGET      ${PROJECT_NAME}
+    DESTINATION /usr/lib/systemd/system/
+)
+########################################################################################################################
+etn_configure_file(
+    ${PROJECT_NAME}.cfg.in
+
+    TARGET      ${PROJECT_NAME}
+    DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/fty-config/
+)
+########################################################################################################################
