@@ -19,11 +19,7 @@
     =========================================================================
 */
 
-#ifndef FTY_CONFIG_H_H_INCLUDED
-#define FTY_CONFIG_H_H_INCLUDED
-
-//  Include the project library file
-#include "fty_config_library.h"
+#pragma once
 
 //  Add your own public definitions here, if you need them
 constexpr auto AGENT_NAME_KEY            = "agentName";
@@ -50,6 +46,3 @@ constexpr auto AUGEAS_OPTIONS            = "augeasOptions";
 constexpr auto CONFIG_VERSION_KEY        = "version";
 constexpr auto ACTIVE_VERSION            = "1.0";
 constexpr auto DATA_MEMBER               = "data";
-
-
-#endif

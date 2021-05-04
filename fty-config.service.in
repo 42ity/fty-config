@@ -1,0 +1,29 @@
+[Unit]
+# In case of recovering a deployment from backups, this does not
+# restore EULA acceptance nor license. So still needs (for now)
+# to go through the standard wizard + EULA as a prerequisite.
+Description=@PROJECT_NAME@ service: Save, Restore and Reset
+After=malamute.service network.target fty-license-accepted.target
+Requires=malamute.service network.target
+# Enable FLA... once, do not keep retrying if EULA is not accepted yet
+Wants=fty-license-accepted.target
+Requisite=fty-license-accepted.target
+PartOf=bios.target
+
+[Service]
+Type=simple
+User=root
+Restart=always
+EnvironmentFile=-@CMAKE_INSTALL_FULL_DATAROOTDIR@/bios/etc/default/bios
+EnvironmentFile=-@CMAKE_INSTALL_FULL_DATAROOTDIR@/bios/etc/default/bios__%n.conf
+EnvironmentFile=-@CMAKE_INSTALL_FULL_DATAROOTDIR@/fty/etc/default/fty
+EnvironmentFile=-@CMAKE_INSTALL_FULL_DATAROOTDIR@/fty/etc/default/fty__%n.conf
+EnvironmentFile=-@CMAKE_INSTALL_FULL_SYSCONFDIR@/default/bios
+EnvironmentFile=-@CMAKE_INSTALL_FULL_SYSCONFDIR@/default/bios__%n.conf
+EnvironmentFile=-@CMAKE_INSTALL_FULL_SYSCONFDIR@/default/fty
+EnvironmentFile=-@CMAKE_INSTALL_FULL_SYSCONFDIR@/default/fty__%n.conf
+Environment="prefix=@CMAKE_INSTALL_PREFIX@"
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/@PROJECT_NAME@ --config @CMAKE_INSTALL_FULL_SYSCONFDIR@/@PROJECT_NAME@/@PROJECT_NAME@.cfg
+
+[Install]
+WantedBy=bios.target

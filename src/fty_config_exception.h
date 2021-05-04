@@ -19,23 +19,26 @@
     =========================================================================
 */
 
-#ifndef FTY_CONFIG_EXCEPTION_H_INCLUDED
-#define FTY_CONFIG_EXCEPTION_H_INCLUDED
+#pragma once
 
-#include <exception>
+#include <stdexcept>
 
-namespace config
+namespace config {
+/**
+ * Configuration class exception
+ */
+class ConfigurationException : public std::runtime_error
 {
-    /**
-    * Configuration class exception
-    */
-    class ConfigurationException : public std::runtime_error {
-      public:
-        ConfigurationException(const std::string& what) : std::runtime_error(what) {}
-        ConfigurationException(const char* what) : std::runtime_error(what) {}
-        virtual ~ConfigurationException() = default;
-    };
+public:
+    ConfigurationException(const std::string& what)
+        : std::runtime_error(what)
+    {
+    }
 
-} // namepsace config
+    ConfigurationException(const char* what)
+        : std::runtime_error(what)
+    {
+    }
+};
 
-#endif
+} // namespace config
