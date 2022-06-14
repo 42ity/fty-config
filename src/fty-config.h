@@ -38,6 +38,8 @@ constexpr auto USER_SESSION_FEATURE_NAME = "user-session";
 constexpr auto DISCOVERY                 = "discovery";
 constexpr auto MASS_MANAGEMENT           = "etn-mass-management";
 constexpr auto NETWORK                   = "network";
+constexpr auto NETWORK_AGENT_SETTINGS    = "network-agent-settings";
+constexpr auto NETWORK_HOST_NAME         = "network-host-name";
 
 // Augeas definition
 constexpr auto AUGEAS_LENS_PATH          = "AugeasLensPath";
