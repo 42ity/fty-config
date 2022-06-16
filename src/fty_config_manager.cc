@@ -190,7 +190,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                 configurationFileName.c_str());
 
             cxxtools::SerializationInfo siData;
-            JSON::readFromString(removeIndexForIface(feature.data()), siData);
+            JSON::readFromString(feature.data(), siData);
             // Get data member
             int returnValue = setConfiguration(siData, configurationFileName);
             if (returnValue == 0) {
@@ -252,6 +252,7 @@ void ConfigurationManager::setConfigurationRecursive(cxxtools::SerializationInfo
     for (it = si.begin(); it != si.end(); ++it) {
         cxxtools::SerializationInfo*          member     = &(*it);
         std::string                           memberName = member->name();
+        memberName = removeIndexForIface(memberName);
         memberName = removeIndexForEntry(memberName);
         memberName = updateIndexForArray(memberName);
         if (member->category() == cxxtools::SerializationInfo::Category::Object) {
@@ -455,7 +456,16 @@ std::string createIndexForIface(std::string json)
 
 std::string removeIndexForIface(const std::string& json)
 {
-    return std::regex_replace(json, std::regex("\"ifacename\\[.*\\]\""), "\"iface\"");
+    std::regex  regex("^ifacename\\[(\\d+)\\]$");
+    std::smatch submatch;
+    // replace "ifacename[index]" by "iface[index+1]"
+    if (std::regex_search(json, submatch, regex)) {
+        std::stringstream buffer;
+        int index = std::stoi(submatch[1]) + 1;
+        buffer << "iface[" << std::to_string(index) << "]";
+        return buffer.str();
+    }
+    return json;
 }
 //__<< HOTFIX
 
