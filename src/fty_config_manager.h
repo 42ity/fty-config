@@ -57,7 +57,8 @@ private:
     dto::srr::ResetResponse   resetConfiguration(const dto::srr::ResetQuery& query);
 
     void getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path, std::string& rootMember);
-    int  setConfiguration(cxxtools::SerializationInfo& si, const std::string& path);
+    int  setConfiguration(cxxtools::SerializationInfo& si, const std::string& rootPath);
+    void setConfigurationRecursive(cxxtools::SerializationInfo& si, const std::string& rootPath, std::string path = "");
     void sendResponse(const messagebus::Message& msg, const dto::UserData& userData);
 
     // Utility
