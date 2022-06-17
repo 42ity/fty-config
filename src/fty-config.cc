@@ -109,6 +109,8 @@ int main(int argc, char* argv[])
     paramsConfig[USER_SESSION_FEATURE_NAME] = "/etc/fty/fty-session.cfg";
     paramsConfig[DISCOVERY]                 = "/etc/fty-discovery/fty-discovery.cfg";
     paramsConfig[NETWORK]                   = "/etc/network/interfaces";
+    paramsConfig[NETWORK_AGENT_SETTINGS]    = "/var/lib/fty/etn-ipm2-network/etn-ipm2-network.json";
+    paramsConfig[NETWORK_HOST_NAME]         = "/etc/hostname";
     paramsConfig[MASS_MANAGEMENT]           = "/var/lib/fty/etn-mass-management/settings.cfg";
     // Default augeas configuration.
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
@@ -131,6 +133,8 @@ int main(int argc, char* argv[])
         paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available-features/user-session", "");
         paramsConfig[DISCOVERY]                 = config.getEntry("available-features/discovery", "");
         paramsConfig[NETWORK]                   = config.getEntry("available-features/network", "");
+        paramsConfig[NETWORK_AGENT_SETTINGS]    = config.getEntry("available-features/network-agent-settings", "");
+        paramsConfig[NETWORK_HOST_NAME]         = config.getEntry("available-features/network-host-name", "");
         paramsConfig[MASS_MANAGEMENT]           = config.getEntry("available-features/etn-mass-management", "");
         // Augeas configuration
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");

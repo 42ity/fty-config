@@ -18,6 +18,8 @@ available-features
     user-session = /etc/fty/fty-session.cfg
     discovery = /etc/fty-discovery/fty-discovery.cfg
     network = /etc/network/interfaces
+    network-agent-settings = /var/lib/fty/etn-ipm2-network/etn-ipm2-network.json
+    network-host-name = /etc/hostname
     etn-mass-management = /var/lib/fty/etn-mass-management/settings.cfg
 
 augeas
