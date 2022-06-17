@@ -50,6 +50,16 @@ static std::string createIndexForIface(std::string json);
 static std::string removeIndexForIface(const std::string& json);
 //__<< HOTFIX
 
+//__>> HOTFIX Network config is not a proper JSON due to several "entry" attribut in the Json
+static std::string createIndexForEntry(std::string json);
+static std::string removeIndexForEntry(const std::string& json);
+//__<< HOTFIX
+
+//__>> HOTFIX Network config is not a proper JSON due to several "string" attribute in the Json for array
+static std::string createIndexForArray(std::string json);
+static std::string updateIndexForArray(const std::string& json);
+//__<< HOTFIX
+
 #define FILE_SEPARATOR     "/"
 #define AUGEAS_FILES       FILE_SEPARATOR "files"
 #define ANY_NODES          FILE_SEPARATOR "*"
@@ -142,7 +152,11 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
             // Persist DTO
             Feature feature;
             feature.set_version(m_configVersion);
-            feature.set_data(createIndexForIface(JSON::writeToString(si, false)));
+            std::string buffer = JSON::writeToString(si, false);
+            buffer = createIndexForIface(buffer);
+            buffer = createIndexForEntry(buffer);
+            buffer = createIndexForArray(buffer);
+            feature.set_data(buffer);
 
             FeatureStatus featureStatus;
             featureStatus.set_status(Status::SUCCESS);
@@ -176,7 +190,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                 configurationFileName.c_str());
 
             cxxtools::SerializationInfo siData;
-            JSON::readFromString(removeIndexForIface(feature.data()), siData);
+            JSON::readFromString(feature.data(), siData);
             // Get data member
             int returnValue = setConfiguration(siData, configurationFileName);
             if (returnValue == 0) {
@@ -226,37 +240,44 @@ void ConfigurationManager::sendResponse(const messagebus::Message& msg, const dt
     }
 }
 
-int ConfigurationManager::setConfiguration(cxxtools::SerializationInfo& si, const std::string& path)
+int ConfigurationManager::setConfiguration(cxxtools::SerializationInfo& si, const std::string& rootPath)
+{
+    setConfigurationRecursive(si, rootPath);
+    return aug_save(m_aug.get());
+}
+
+void ConfigurationManager::setConfigurationRecursive(cxxtools::SerializationInfo& si, const std::string& rootPath, std::string path)
 {
     cxxtools::SerializationInfo::Iterator it;
     for (it = si.begin(); it != si.end(); ++it) {
         cxxtools::SerializationInfo*          member     = &(*it);
         std::string                           memberName = member->name();
-        cxxtools::SerializationInfo::Iterator itElement;
-
-        for (itElement = member->begin(); itElement != member->end(); ++itElement) {
-            cxxtools::SerializationInfo* element     = &(*itElement);
-            std::string                  elementName = element->name();
-            std::string                  elementValue, fullPath;
-
-            // Build augeas full path and set value
-            if (element->category() == cxxtools::SerializationInfo::Category::Object) {
-                for (const auto& arrayElem : *element) {
-                    fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName + FILE_SEPARATOR +
-                               arrayElem.name();
-                    arrayElem.getValue(elementValue);
-                    // Set value
-                    persistValue(fullPath, elementValue);
-                }
-            } else {
-                fullPath = path + FILE_SEPARATOR + memberName + FILE_SEPARATOR + elementName;
-                element->getValue(elementValue);
-                // Set value
-                persistValue(fullPath, elementValue);
+        memberName = removeIndexForIface(memberName);
+        memberName = removeIndexForEntry(memberName);
+        memberName = updateIndexForArray(memberName);
+        if (member->category() == cxxtools::SerializationInfo::Category::Object) {
+            std::string pathCompute = path;
+            if (!pathCompute.empty()) {
+               pathCompute += FILE_SEPARATOR;
             }
+            pathCompute += memberName;
+            setConfigurationRecursive(*member, rootPath, pathCompute);
+        }
+        else {
+            std::string fullPath;
+            if (!path.empty()) {
+                fullPath = rootPath + FILE_SEPARATOR + path + FILE_SEPARATOR + memberName;
+            }
+            else {
+                fullPath = rootPath + FILE_SEPARATOR + memberName;
+            }
+            std::string elementValue;
+            member->getValue(elementValue);
+            // Set value
+            persistValue(fullPath, elementValue);
+            logDebug("Set fullPath={} elementValue={}", fullPath, elementValue);
         }
     }
-    return aug_save(m_aug.get());
 }
 
 void ConfigurationManager::persistValue(const std::string& fullPath, const std::string& value)
@@ -435,7 +456,103 @@ std::string createIndexForIface(std::string json)
 
 std::string removeIndexForIface(const std::string& json)
 {
-    return std::regex_replace(json, std::regex("\"ifacename\\[.*\\]\""), "\"iface\"");
+    std::regex  regex("^ifacename\\[(\\d+)\\]$");
+    std::smatch submatch;
+    // replace "ifacename[index]" by "iface[index+1]"
+    if (std::regex_search(json, submatch, regex)) {
+        std::stringstream buffer;
+        int index = std::stoi(submatch[1]) + 1;
+        buffer << "iface[" << std::to_string(index) << "]";
+        return buffer.str();
+    }
+    return json;
+}
+//__<< HOTFIX
+
+//__>> HOTFIX Network config is not a proper JSON due to several "entry" attribut in the Json
+// Need to indexed the "entry" to have unique key for the json parser
+// Replace "entry" by "entryname.#index"
+std::string createIndexForEntry(std::string json)
+{
+    std::regex  regex("\"entry\"");
+    std::smatch submatch;
+
+    int         index = 0;
+    std::string output;
+
+    // Search all interface
+    while (std::regex_search(json, submatch, regex)) {
+        // Build resulting string
+        output += std::string(submatch.prefix()) + "\"entryname.#" + std::to_string(index++) + "\"";
+        // Continue to search with the rest of the string
+        json = submatch.suffix();
+    }
+    // If there is still a suffix, add it
+    output += json;
+
+    return output;
+}
+
+// replace "entryname.#index" by "entry" for set value in augeas
+std::string removeIndexForEntry(const std::string& json)
+{
+    return std::regex_replace(json, std::regex("^entryname\\.\\#\\d+$"), "entry");
+}
+//__<< HOTFIX
+
+//__>> HOTFIX Network config is not a proper JSON due to several "string" attribute in the Json for array
+// ex: { "my_array": [ "127.0.0.1", "127.0.0.2", "127.0.0.3"]} will produce with augeas:
+//     { "my_array": { "array": { "string":"127.0.0.1", "string":"127.0.0.2", "string":"127.0.0.3" }}}
+// Need to indexed the "string" to have unique key for the json parser:
+//     { "my_array": { "array":{ "stringname.#1":"127.0.0.1", "stringname.#2":"127.0.0.2", "stringname.#3":"127.0.0.3" }}}
+std::string createIndexForArray(std::string json)
+{
+    std::regex  regex("\"array\"\\:\\{\"string\"");
+    std::regex  regex2("\"string\"\\:");
+    std::smatch submatch;
+    std::string output;
+
+    // Search all array
+    while (std::regex_search(json, submatch, regex)) {
+        // Build resulting string
+        output += std::string(submatch.prefix()) + "\"array\":{\"stringname.#1\"";
+        std::string after = submatch.suffix();
+        // try to find the end of array
+        auto pos = after.find("}");
+        if (pos != std::string::npos) {
+            std::string stringArray = after.substr(0, pos + 1);
+            after = after.substr(pos + 1);
+            std::smatch submatch2;
+            int indexString = 2;
+            // replace all "string" by "string.#index"
+            while (std::regex_search(stringArray, submatch2, regex2)) {
+                output += std::string(submatch2.prefix()) + "\"stringname.#" + std::to_string(indexString++) + "\":";
+                stringArray = submatch2.suffix();
+            }
+            // If there is still a suffix, add it
+            output += stringArray;
+        }
+        // Continue to search with the rest of the string
+        json = after;
+    }
+    // If there is still a suffix, add it
+    output += json;
+
+    return output;
+}
+
+// replace "stringname.#index" by "string[index]" for set value in augeas for array
+std::string updateIndexForArray(const std::string& member)
+{
+    std::regex  regex("^stringname\\.\\#(\\d+)$");
+    std::smatch submatch;
+    // replace "stringname.#index" by "string[index]"
+    if (std::regex_search(member, submatch, regex)) {
+        std::stringstream buffer;
+        buffer << "string[" << submatch[1] << "]";
+        return buffer.str();
+    }
+    return member;
 }
 //__<< HOTFIX
 } // namespace config
