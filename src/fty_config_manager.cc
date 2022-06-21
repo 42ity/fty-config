@@ -43,21 +43,21 @@ using namespace JSON;
 using namespace dto::srr;
 
 namespace config {
-//__>> HOTFIX Network config is not a proper JSON due to several "iface" attribut in the Json
+//__>> HOTFIX Network config is not a proper JSON due to several "iface" attribute name in the Json
 // Solution: index the iface (rename ifacename) for the output and remove the index when restore
 // Functions
-static std::string createIndexForIface(std::string json);
-static std::string removeIndexForIface(const std::string& json);
+static std::string createIndexForIface(const std::string& json);
+static std::string removeIndexForIface(const std::string& member);
 //__<< HOTFIX
 
-//__>> HOTFIX Network config is not a proper JSON due to several "entry" attribut in the Json
-static std::string createIndexForEntry(std::string json);
-static std::string removeIndexForEntry(const std::string& json);
+//__>> HOTFIX Network config is not a proper JSON due to several same attribute name in the Json
+static std::string createIndexForOthers(const std::string& json);
+static std::string removeIndexForOthers(const std::string& member);
 //__<< HOTFIX
 
-//__>> HOTFIX Network config is not a proper JSON due to several "string" attribute in the Json for array
-static std::string createIndexForArray(std::string json);
-static std::string updateIndexForArray(const std::string& json);
+//__>> HOTFIX Network config is not a proper JSON due to several "string" attribute name in the Json for array
+static std::string createIndexForArray(const std::string& json);
+static std::string updateIndexForArray(const std::string& member);
 //__<< HOTFIX
 
 #define FILE_SEPARATOR     "/"
@@ -154,7 +154,7 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
             feature.set_version(m_configVersion);
             std::string buffer = JSON::writeToString(si, false);
             buffer = createIndexForIface(buffer);
-            buffer = createIndexForEntry(buffer);
+            buffer = createIndexForOthers(buffer);
             buffer = createIndexForArray(buffer);
             feature.set_data(buffer);
 
@@ -246,14 +246,14 @@ int ConfigurationManager::setConfiguration(cxxtools::SerializationInfo& si, cons
     return aug_save(m_aug.get());
 }
 
-void ConfigurationManager::setConfigurationRecursive(cxxtools::SerializationInfo& si, const std::string& rootPath, std::string path)
+void ConfigurationManager::setConfigurationRecursive(cxxtools::SerializationInfo& si, const std::string& rootPath, const std::string& path)
 {
     cxxtools::SerializationInfo::Iterator it;
     for (it = si.begin(); it != si.end(); ++it) {
         cxxtools::SerializationInfo*          member     = &(*it);
         std::string                           memberName = member->name();
         memberName = removeIndexForIface(memberName);
-        memberName = removeIndexForEntry(memberName);
+        memberName = removeIndexForOthers(memberName);
         memberName = updateIndexForArray(memberName);
         if (member->category() == cxxtools::SerializationInfo::Category::Object) {
             std::string pathCompute = path;
@@ -432,71 +432,84 @@ bool ConfigurationManager::isVerstionCompatible(const std::string& version)
     return comptible;
 }
 
-//__>> HOTFIX Network config is not a proper JSON due to several "iface" attribut in the Json
-std::string createIndexForIface(std::string json)
+//__>> HOTFIX Network config is not a proper JSON due to several "iface" attribute name in the Json
+std::string createIndexForIface(const std::string& json)
 {
     std::regex  regex("\"iface\"");
     std::smatch submatch;
-
-    int         index = 0;
     std::string output;
+    std::string jsonProcessing = json;
+    int index = 0;
 
     // Search all interface
-    while (std::regex_search(json, submatch, regex)) {
+    while (std::regex_search(jsonProcessing, submatch, regex)) {
         // Build resulting string
         output += std::string(submatch.prefix()) + "\"ifacename[" + std::to_string(index++) + "]\"";
         // Continue to search with the rest of the string
-        json = submatch.suffix();
+        jsonProcessing = submatch.suffix();
     }
     // If there is still a suffix, add it
-    output += json;
+    output += jsonProcessing;
 
     return output;
 }
 
-std::string removeIndexForIface(const std::string& json)
+std::string removeIndexForIface(const std::string& member)
 {
-    std::regex  regex("^ifacename\\[(\\d+)\\]$");
+    std::regex regex("^ifacename\\[(\\d+)\\]$");
     std::smatch submatch;
     // replace "ifacename[index]" by "iface[index+1]"
-    if (std::regex_search(json, submatch, regex)) {
+    if (std::regex_search(member, submatch, regex)) {
         std::stringstream buffer;
         int index = std::stoi(submatch[1]) + 1;
         buffer << "iface[" << std::to_string(index) << "]";
         return buffer.str();
     }
-    return json;
+    return member;
 }
 //__<< HOTFIX
 
-//__>> HOTFIX Network config is not a proper JSON due to several "entry" attribut in the Json
-// Need to indexed the "entry" to have unique key for the json parser
-// Replace "entry" by "entryname.#index"
-std::string createIndexForEntry(std::string json)
+//__>> HOTFIX Network config is not a proper JSON due to several same attributes name
+// (e.g. "entry" or "dns-nameserver") in the Json
+// Need to indexed these attributes to have unique key for the json parser
+// eg: Replace "entry" by "entry.#index"
+//     Replace "dns-nameserver" by "dns-nameserver.#index"
+std::string createIndexForOthers(const std::string& json)
 {
-    std::regex  regex("\"entry\"");
+    std::regex  regex("\"(entry|dns-nameserver)\"");
     std::smatch submatch;
-
-    int         index = 0;
-    std::string output;
+    std::string jsonProcessing = json;
+    std::stringstream buffer;
+    int index = 0;
 
     // Search all interface
-    while (std::regex_search(json, submatch, regex)) {
+    while (std::regex_search(jsonProcessing, submatch, regex)) {
         // Build resulting string
-        output += std::string(submatch.prefix()) + "\"entryname.#" + std::to_string(index++) + "\"";
+        buffer << std::string(submatch.prefix()) << "\"" << submatch[1] << ".#" << std::to_string(index++) << "\"";
         // Continue to search with the rest of the string
-        json = submatch.suffix();
+        jsonProcessing = submatch.suffix();
     }
     // If there is still a suffix, add it
-    output += json;
+    buffer << jsonProcessing;
 
-    return output;
+    return buffer.str();
 }
 
-// replace "entryname.#index" by "entry" for set value in augeas
-std::string removeIndexForEntry(const std::string& json)
+// remove previously added index for key which is not needed for set value in augeas
+// e.g: "entry.#index" -> "entry"
+//      "dns-nameserver.#index" -> "dns-nameserver"
+std::string removeIndexForOthers(const std::string& member)
 {
-    return std::regex_replace(json, std::regex("^entryname\\.\\#\\d+$"), "entry");
+    std::regex  regex("^(entry|dns-nameserver)\\.\\#\\d+$");
+    std::smatch submatch;
+    std::string output = member;
+
+    std::stringstream buffer;
+    if (std::regex_search(member, submatch, regex)) {
+        // Replace by "entry" or "dns-nameserver"
+        output = submatch[1];
+    }
+    return output;
 }
 //__<< HOTFIX
 
@@ -504,18 +517,19 @@ std::string removeIndexForEntry(const std::string& json)
 // ex: { "my_array": [ "127.0.0.1", "127.0.0.2", "127.0.0.3"]} will produce with augeas:
 //     { "my_array": { "array": { "string":"127.0.0.1", "string":"127.0.0.2", "string":"127.0.0.3" }}}
 // Need to indexed the "string" to have unique key for the json parser:
-//     { "my_array": { "array":{ "stringname.#1":"127.0.0.1", "stringname.#2":"127.0.0.2", "stringname.#3":"127.0.0.3" }}}
-std::string createIndexForArray(std::string json)
+//     { "my_array": { "array":{ "string.#1":"127.0.0.1", "string.#2":"127.0.0.2", "string.#3":"127.0.0.3" }}}
+std::string createIndexForArray(const std::string& json)
 {
     std::regex  regex("\"array\"\\:\\{\"string\"");
     std::regex  regex2("\"string\"\\:");
     std::smatch submatch;
     std::string output;
+    std::string jsonProcessing = json;
 
     // Search all array
-    while (std::regex_search(json, submatch, regex)) {
+    while (std::regex_search(jsonProcessing, submatch, regex)) {
         // Build resulting string
-        output += std::string(submatch.prefix()) + "\"array\":{\"stringname.#1\"";
+        output += std::string(submatch.prefix()) + "\"array\":{\"string.#1\"";
         std::string after = submatch.suffix();
         // try to find the end of array
         auto pos = after.find("}");
@@ -526,27 +540,27 @@ std::string createIndexForArray(std::string json)
             int indexString = 2;
             // replace all "string" by "string.#index"
             while (std::regex_search(stringArray, submatch2, regex2)) {
-                output += std::string(submatch2.prefix()) + "\"stringname.#" + std::to_string(indexString++) + "\":";
+                output += std::string(submatch2.prefix()) + "\"string.#" + std::to_string(indexString++) + "\":";
                 stringArray = submatch2.suffix();
             }
             // If there is still a suffix, add it
             output += stringArray;
         }
         // Continue to search with the rest of the string
-        json = after;
+        jsonProcessing = after;
     }
     // If there is still a suffix, add it
-    output += json;
+    output += jsonProcessing;
 
     return output;
 }
 
-// replace "stringname.#index" by "string[index]" for set value in augeas for array
+// replace "string.#index" by "string[index]" for set value in augeas for array
 std::string updateIndexForArray(const std::string& member)
 {
-    std::regex  regex("^stringname\\.\\#(\\d+)$");
+    std::regex  regex("^string\\.\\#(\\d+)$");
     std::smatch submatch;
-    // replace "stringname.#index" by "string[index]"
+    // replace "string.#index" by "string[index]"
     if (std::regex_search(member, submatch, regex)) {
         std::stringstream buffer;
         buffer << "string[" << submatch[1] << "]";

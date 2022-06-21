@@ -58,7 +58,7 @@ private:
 
     void getConfigurationToJson(cxxtools::SerializationInfo& si, std::string& path, std::string& rootMember);
     int  setConfiguration(cxxtools::SerializationInfo& si, const std::string& rootPath);
-    void setConfigurationRecursive(cxxtools::SerializationInfo& si, const std::string& rootPath, std::string path = "");
+    void setConfigurationRecursive(cxxtools::SerializationInfo& si, const std::string& rootPath, const std::string &path = "");
     void sendResponse(const messagebus::Message& msg, const dto::UserData& userData);
 
     // Utility
