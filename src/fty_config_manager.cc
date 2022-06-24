@@ -35,8 +35,10 @@
 #include <list>
 #include <memory>
 #include <regex>
-#include <sstream>
 #include <vector>
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
 using namespace std::placeholders;
 using namespace JSON;
@@ -171,6 +173,24 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
     return (createSaveResponse(mapFeaturesData, m_configVersion)).save();
 }
 
+static void dumpFile(const std::string& fileName)
+{
+    try {
+        std::ifstream in(fileName, std::ifstream::in);
+        if (in.is_open()) {
+            logDebug("dump {}", fileName);
+            std::string line;
+            while (std::getline(in, line)) {
+                logDebug("{}", line);
+            }
+            in.close();
+        }
+    }
+    catch (const std::exception& e) {
+        logDebug("dump {} failed: {}", fileName, e.what());
+    }
+}
+
 RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& query)
 {
     log_debug("Restoring configuration...");
@@ -189,13 +209,70 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
             log_debug("Restoring configuration for: %s, with configuration file: %s", featureName.c_str(),
                 configurationFileName.c_str());
 
+            if (featureName == NETWORK) {
+                // restore exception /etc/network/interfaces
+                // dns-* definitions are not removed by augtool
+                // remove them, and let augtool restore them in case
+
+                std::string fileName(configurationFileName.substr(std::string("/files").size()));
+                logDebug("Exception of {} (file: {})", featureName, fileName);
+
+                try {
+                    std::ifstream in(fileName, std::ifstream::in);
+                    if (in.is_open()) {
+                        std::string copyName{"/tmp/" + featureName + ".copy"};
+                        logDebug("prepare {} to {}", fileName, copyName);
+
+                        std::ofstream out(copyName, std::ofstream::out);
+                        std::string line;
+                        bool changed = false;
+                        while (std::getline(in, line)) {
+                            // skip dns-* definitions
+                            if (strstr(line.c_str(), "dns-search ")) { changed = true; continue; }
+                            if (strstr(line.c_str(), "dns-nameserver ")) { changed = true; continue; }
+
+                            out.write(line.c_str(), std::streamsize(line.size()));
+                            out.write("\n", 1);
+                        }
+                        in.close();
+                        out.close();
+
+                        if (changed)
+                        {   // move copyName to fileName
+                            dumpFile(fileName);
+                            dumpFile(copyName);
+
+                            std::ifstream in1(copyName, std::ios::in | std::ios::binary);
+                            std::ofstream out1(fileName, std::ios::out | std::ios::binary);
+                            out1 << in1.rdbuf();
+                            in1.close();
+                            out1.close();
+
+                            dumpFile(fileName);
+                        }
+                        std::remove(copyName.c_str());
+                    }
+                }
+                catch (const std::exception& e) {
+                    logWarn("Failed to prepare {} (e: {})", fileName, e.what());
+                }
+            }
+
+            // Get data member
             cxxtools::SerializationInfo siData;
             JSON::readFromString(feature.data(), siData);
-            // Get data member
+
+            // restore
             int returnValue = setConfiguration(siData, configurationFileName);
             if (returnValue == 0) {
                 log_debug("Restore configuration done: %s succeed!", featureName.c_str());
                 featureStatus.set_status(Status::SUCCESS);
+
+                if (featureName == NETWORK) {
+                    // dump restored file
+                    std::string fileName(configurationFileName.substr(std::string("/files").size()));
+                    dumpFile(fileName);
+                }
             } else {
                 featureStatus.set_status(Status::FAILED);
                 std::string errorMsg =
