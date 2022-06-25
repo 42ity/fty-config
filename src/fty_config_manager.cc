@@ -128,7 +128,7 @@ void ConfigurationManager::handleRequest(messagebus::Message msg)
         dto::UserData dataResponse;
         dataResponse << response;
         sendResponse(msg, dataResponse);
-    } catch (std::exception& ex) {
+    } catch (const std::exception& ex) {
         log_error(ex.what());
     }
 }
@@ -173,12 +173,16 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
     return (createSaveResponse(mapFeaturesData, m_configVersion)).save();
 }
 
-static void dumpFile(const std::string& fileName)
+//DBG, dump file content
+static void dumpFile(const std::string& fileName, const std::string& msg = "")
 {
+    if (!ftylog_isLogDebug(ftylog_getInstance()))
+        return;
+
     try {
         std::ifstream in(fileName, std::ifstream::in);
         if (in.is_open()) {
-            logDebug("dump {}", fileName);
+            logDebug("{}{}", msg, fileName);
             std::string line;
             while (std::getline(in, line)) {
                 logDebug("{}", line);
@@ -187,7 +191,7 @@ static void dumpFile(const std::string& fileName)
         }
     }
     catch (const std::exception& e) {
-        logDebug("dump {} failed: {}", fileName, e.what());
+        logDebug("dump {}{} failed (e: {})", msg, fileName, e.what());
     }
 }
 
@@ -211,25 +215,29 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
 
             if (featureName == NETWORK) {
                 // restore exception /etc/network/interfaces
-                // dns-* definitions are not removed by augtool
-                // remove them, and let augtool restore them in case
+                // dns-* definitions are not removed by augeas
+                // remove them, and let augeas restore them in case
 
-                std::string fileName(configurationFileName.substr(std::string("/files").size()));
-                logDebug("Exception of {} (file: {})", featureName, fileName);
+                std::string fileName(configurationFileName.substr(std::string(AUGEAS_FILES).size()));
+                logDebug("Handle exception of {} (file: {})", featureName, fileName);
 
                 try {
                     std::ifstream in(fileName, std::ifstream::in);
                     if (in.is_open()) {
                         std::string copyName{"/tmp/" + featureName + ".copy"};
-                        logDebug("prepare {} to {}", fileName, copyName);
+                        logDebug("prepare {}", copyName);
 
                         std::ofstream out(copyName, std::ofstream::out);
                         std::string line;
-                        bool changed = false;
+                        bool dns_found = false;
                         while (std::getline(in, line)) {
-                            // skip dns-* definitions
-                            if (strstr(line.c_str(), "dns-search ")) { changed = true; continue; }
-                            if (strstr(line.c_str(), "dns-nameserver ")) { changed = true; continue; }
+                            // skip dns-* definition
+                            if (strstr(line.c_str(), "dns-search ")
+                                || strstr(line.c_str(), "dns-nameserver ")
+                            ){
+                                dns_found = true;
+                                continue;
+                            }
 
                             out.write(line.c_str(), std::streamsize(line.size()));
                             out.write("\n", 1);
@@ -237,10 +245,11 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                         in.close();
                         out.close();
 
-                        if (changed)
-                        {   // move copyName to fileName
-                            dumpFile(fileName);
-                            dumpFile(copyName);
+                        if (dns_found)
+                        {
+                            // move copyName to fileName
+                            logDebug("dns definition removed from {}", fileName);
+                            dumpFile(fileName, "Before: ");
 
                             std::ifstream in1(copyName, std::ios::in | std::ios::binary);
                             std::ofstream out1(fileName, std::ios::out | std::ios::binary);
@@ -248,7 +257,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                             in1.close();
                             out1.close();
 
-                            dumpFile(fileName);
+                            dumpFile(fileName, "After: ");
                         }
                         std::remove(copyName.c_str());
                     }
@@ -271,7 +280,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                 if (featureName == NETWORK) {
                     // dump restored file
                     std::string fileName(configurationFileName.substr(std::string("/files").size()));
-                    dumpFile(fileName);
+                    dumpFile(fileName, "Restored: ");
                 }
             } else {
                 featureStatus.set_status(Status::FAILED);
