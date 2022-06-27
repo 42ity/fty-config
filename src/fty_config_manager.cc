@@ -70,7 +70,7 @@ static std::string updateIndexForArray(const std::string& member);
 #define COMMENTS_DELIMITER "#"
 
 #define DATA_VERSION_2_0 "2.0" // data 2.0 (IPM 2.6)
-#define DATA_2_base64encoded "base64_encoded" // data 2.x
+#define DATA_2_base64_encoded "base64_encoded" // data 2.x
 
 const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
 
@@ -144,15 +144,14 @@ void ConfigurationManager::handleRequest(messagebus::Message msg)
     }
 }
 
-// version X.Y formatted (major.minor)
-// returns true if v1.major >= v2.major
-static bool isVersionCompatible(const std::string& v1, const std::string& v2)
+// assume version X.Y formatted (major.minor)
+static bool isVersion_1_x (const std::string& v)
 {
-    int major1 = std::stoi(v1);
-    int major2 = std::stoi(v2);
-    //logDebug("isVersionCompatible: v1: {} (major1: {}) v2: {} (major2: {}): result: {}",
-    //    v1, major1, v2, major2, (major1 >= major2));
-    return (major1 >= major2);
+    return !v.empty() && v[0] == '1';
+}
+static bool isVersion_2_x (const std::string& v)
+{
+    return !v.empty() && v[0] == '2';
 }
 
 // data 2.x features
@@ -194,13 +193,13 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
                     logError("fileReadToBase64 failed (r: {}, file: {})", r, fileName);
                 }
                 else {
-                    si.addMember(DATA_2_base64encoded) <<= b64;
+                    si.addMember(DATA_2_base64_encoded) <<= b64;
                     featureVersion = DATA_VERSION_2_0; // break retro compat 1.x
                     saveSuccess = true;
                 }
             }
             else {
-                // data 1.x fallback, get augeas configuration
+                // data 1.x, get augeas configuration
                 getConfigurationToJson(si, fileNameFullPath, confFileName);
                 saveSuccess = true;
                 useAugeas = true;
@@ -263,14 +262,10 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
         logDebug("Restore feature {}", featureName);
         logDebug("configVersion: {}, feature.version: {}", m_configVersion, feature.version());
 
-        // data 1.x (augeas)
-        bool compatible = isVersionCompatible(m_configVersion, feature.version());
-        // support data 2.0 (bulk restore)
-        if (!compatible) {
-            compatible = isVersionCompatible(feature.version(), DATA_VERSION_2_0);
-        }
-
         FeatureStatus featureStatus;
+
+        // data 1.x (augeas) && data 2.x (bulk restore)
+        bool compatible = isVersion_1_x(feature.version()) || isVersion_2_x(feature.version());
 
         if (compatible) {
             const std::string& configurationFileName = AUGEAS_FILES + fileName;
@@ -283,11 +278,11 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
 
             int returnValue = -1; // failed (default)
 
-            if (isVersionCompatible(feature.version(), DATA_VERSION_2_0)) {
-                // data 2.0, bulk restore
-                if (siData.findMember(DATA_2_base64encoded)) {
+            if (isVersion_2_x(feature.version())) {
+                // data 2.x, bulk restore
+                if (siData.findMember(DATA_2_base64_encoded)) {
                     std::string b64;
-                    siData.getMember(DATA_2_base64encoded, b64);
+                    siData.getMember(DATA_2_base64_encoded, b64);
                     int r = fileRestoreFromBase64(fileName, b64);
                     if (r != 0) {
                         logError("fileRestoreFromBase64 failed (r: {}, file: {})", r, fileName);
@@ -298,7 +293,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                     }
                 }
                 else {
-                    logError("data {}: member {} is missing", feature.version(), DATA_2_base64encoded);
+                    logError("data {}: member {} is missing", feature.version(), DATA_2_base64_encoded);
                 }
             }
             else {
@@ -383,7 +378,7 @@ void ConfigurationManager::setConfigurationRecursive(cxxtools::SerializationInfo
         std::string                  memberName = member->name();
 
         // ignore non augeas members (secure, normally never reached)
-        if (memberName == DATA_2_base64encoded) {
+        if (memberName == DATA_2_base64_encoded) {
             logWarn("Ignore unexpected augeas json member ({})", memberName);
             continue;
         }
