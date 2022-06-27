@@ -9,7 +9,7 @@ server
 srr-msg-bus
     endpoint = ipc://@/malamute             #   Malamute endpoint
     address = srr-agent                     #   Agent address
-    queueName = ETN.Q.IPMCORE.CONFIG           # Srr queue name for all incoming request.
+    queueName = ETN.Q.IPMCORE.CONFIG        #   Srr queue name for all incoming request.
 
 available-features
     monitoring = /etc/fty-nut/fty-nut.cfg
@@ -17,14 +17,14 @@ available-features
     automation-settings = /etc/fty/etn-automation.cfg
     user-session = /etc/fty/fty-session.cfg
     discovery = /etc/fty-discovery/fty-discovery.cfg
-    network = /etc/network/interfaces
-    network-agent-settings = /var/lib/fty/etn-ipm2-network/etn-ipm2-network.json
-    network-host-name = /etc/hostname
     etn-mass-management = /var/lib/fty/etn-mass-management/settings.cfg
+    network = /etc/network/interfaces
+    network-host-name = /etc/hostname
+    network-agent-settings = /var/lib/fty/etn-ipm2-network/etn-ipm2-network.json
 
 augeas
     lensPath = /usr/share/fty/lenses/
     augeasOptions = AUG_SAVE_BACKUP # Values availabes separate by '|' AUG_NONE AUG_TRACE_MODULE_LOADING AUG_SAVE_BACKUP
 
 config
-    version = 1.0 # Config version.
+    version = 1.0 # Config version

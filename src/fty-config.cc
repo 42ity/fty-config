@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
     paramsConfig[AUGEAS_OPTIONS]   = AUG_NONE;
     // version
-    paramsConfig[CONFIG_VERSION_KEY] = ACTIVE_VERSION;
+    paramsConfig[CONFIG_VERSION_KEY] = CONFIG_VERSION;
 
     if (config_file) {
         log_debug((AGENT_NAME + std::string(": loading configuration file from ") + config_file).c_str());
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");
         paramsConfig[AUGEAS_OPTIONS]   = config.getEntry("augeas/augeasOptions", "0");
         // version
-        paramsConfig[CONFIG_VERSION_KEY] = config.getEntry("config/version", ACTIVE_VERSION);
+        paramsConfig[CONFIG_VERSION_KEY] = config.getEntry("config/version", CONFIG_VERSION);
     }
 
     if (verbose) {

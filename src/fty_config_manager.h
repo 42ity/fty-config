@@ -66,7 +66,6 @@ private:
     void                     dumpConfiguration(std::string& path);
     std::vector<std::string> findMembersFromMatch(const std::string& input, const std::string& rootMember);
     int                      getAugeasFlags(std::string& augeasOpts);
-    bool                     isVerstionCompatible(const std::string& version);
     void                     persistValue(const std::string& fullPath, const std::string& value);
 };
 
