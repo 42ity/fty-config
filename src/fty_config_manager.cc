@@ -145,13 +145,13 @@ void ConfigurationManager::handleRequest(messagebus::Message msg)
 }
 
 // assume version X.Y formatted (major.minor)
-static bool isVersion_1_x (const std::string& v)
+static bool isVersion_1_x (const std::string& version)
 {
-    return !v.empty() && v[0] == '1';
+    return (version.find("1.") == 0);
 }
-static bool isVersion_2_x (const std::string& v)
+static bool isVersion_2_x (const std::string& version)
 {
-    return !v.empty() && v[0] == '2';
+    return (version.find("2.") == 0);
 }
 
 // data 2.x features
