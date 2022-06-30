@@ -29,20 +29,24 @@
 #include "fty_config_manager.h"
 #include "fty-config.h"
 #include "fty_config_exception.h"
+#include "file.h"
 #include <augeas.h>
 #include <fty_common.h>
 #include <iostream>
 #include <list>
 #include <memory>
 #include <regex>
-#include <sstream>
 #include <vector>
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
 using namespace std::placeholders;
 using namespace JSON;
 using namespace dto::srr;
 
 namespace config {
+
 //__>> HOTFIX Network config is not a proper JSON due to several "iface" attribute name in the Json
 // Solution: index the iface (rename ifacename) for the output and remove the index when restore
 // Functions
@@ -65,6 +69,9 @@ static std::string updateIndexForArray(const std::string& member);
 #define ANY_NODES          FILE_SEPARATOR "*"
 #define COMMENTS_DELIMITER "#"
 
+#define DATA_VERSION_2_0 "2.0" // data 2.0 (IPM 2.6)
+#define DATA_2_base64_encoded "base64_encoded" // data 2.x
+
 const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
 
 ConfigurationManager::ConfigurationManager(const std::map<std::string, std::string>& parameters)
@@ -77,6 +84,8 @@ ConfigurationManager::ConfigurationManager(const std::map<std::string, std::stri
 void ConfigurationManager::init()
 {
     try {
+        logDebug("init");
+
         // Augeas tool init
         int augeasOpt = getAugeasFlags(m_parameters.at(AUGEAS_OPTIONS));
         log_debug("augeas options: %d", augeasOpt);
@@ -96,15 +105,19 @@ void ConfigurationManager::init()
         m_processor.saveHandler    = std::bind(&ConfigurationManager::saveConfiguration, this, _1);
         m_processor.restoreHandler = std::bind(&ConfigurationManager::restoreConfiguration, this, _1);
         m_processor.resetHandler   = std::bind(&ConfigurationManager::resetConfiguration, this, _1);
-        // Srr version
+
+        // agent format current version
         m_configVersion = m_parameters.at(CONFIG_VERSION_KEY);
+        logDebug("configVersion: {}", m_configVersion);
 
         // Listen all incoming request
         auto fct = std::bind(&ConfigurationManager::handleRequest, this, _1);
         m_msgBus->receive(m_parameters.at(QUEUE_NAME_KEY), fct);
-    } catch (messagebus::MessageBusException& ex) {
+    }
+    catch (messagebus::MessageBusException& ex) {
         log_error("Message bus error: %s", ex.what());
-    } catch (...) {
+    }
+    catch (...) {
         log_error("Unexpected error: unknown");
     }
 }
@@ -126,93 +139,202 @@ void ConfigurationManager::handleRequest(messagebus::Message msg)
         dto::UserData dataResponse;
         dataResponse << response;
         sendResponse(msg, dataResponse);
-    } catch (std::exception& ex) {
+    } catch (const std::exception& ex) {
         log_error(ex.what());
     }
 }
 
+// assume version X.Y formatted (major.minor)
+static bool isVersion_1_x (const std::string& version)
+{
+    return (version.find("1.") == 0);
+}
+static bool isVersion_2_x (const std::string& version)
+{
+    return (version.find("2.") == 0);
+}
+
+// data 2.x features
+static bool isFeature_Version2(const std::string& featureName)
+{
+    return (featureName == NETWORK)
+        || (featureName == NETWORK_HOST_NAME)
+        || (featureName == NETWORK_AGENT_SETTINGS);
+}
+
 SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
 {
-    log_debug("Saving configuration");
+    log_debug("Save configuration...");
+
     std::map<FeatureName, FeatureAndStatus> mapFeaturesData;
 
     for (const auto& featureName : query.features()) {
         // Get the full configuration file path name from class variable m_parameters
-        std::string fileNameFullPath = AUGEAS_FILES + m_parameters.at(featureName) + ANY_NODES;
-        log_debug("Configuration file name: %s", fileNameFullPath.c_str());
+        const std::string fileName(m_parameters.at(featureName));
+        std::string fileNameFullPath = AUGEAS_FILES + fileName + ANY_NODES;
+
+        log_debug("Configuration augeas file: %s", fileNameFullPath.c_str());
 
         // Get the last pattern
-        std::size_t found = (m_parameters.at(featureName)).find_last_of(FILE_SEPARATOR);
+        std::size_t found = fileName.find_last_of(FILE_SEPARATOR);
         if (found != std::string::npos) {
+            std::string featureVersion{m_configVersion}; // current (default)
+            std::string confFileName = fileName.substr(found + 1);
+
             cxxtools::SerializationInfo si;
-            std::string                 confFileName =
-                (m_parameters.at(featureName)).substr(found + 1, (m_parameters.at(featureName)).length());
-            // Get configuration
-            getConfigurationToJson(si, fileNameFullPath, confFileName);
+            bool useAugeas = false; // 'augeas conf.' vs. 'bulk save'
+            bool saveSuccess = false;
+
+            if (isFeature_Version2(featureName)) {
+                // data 2.0, save file content base64 encoded (bulk save)
+                std::string b64;
+                int r = fileReadToBase64(fileName, b64);
+                if (r != 0) {
+                    logError("fileReadToBase64 failed (r: {}, file: {})", r, fileName);
+                }
+                else {
+                    si.addMember(DATA_2_base64_encoded) <<= b64;
+                    featureVersion = DATA_VERSION_2_0; // break retro compat 1.x
+                    saveSuccess = true;
+                }
+            }
+            else {
+                // data 1.x, get augeas configuration
+                getConfigurationToJson(si, fileNameFullPath, confFileName);
+                saveSuccess = true;
+                useAugeas = true;
+            }
+
+            logDebug("save {}: version: {}, success: {}", featureName, featureVersion, saveSuccess);
+            //logDebug("save {}: {}", featureName, JSON::writeToString(si, true));
+
             // Persist DTO
-            Feature feature;
-            feature.set_version(m_configVersion);
             std::string buffer = JSON::writeToString(si, false);
-            buffer = createIndexForIface(buffer);
-            buffer = createIndexForOthers(buffer);
-            buffer = createIndexForArray(buffer);
+            if (useAugeas) {
+                // apply augeas hotfixes
+                buffer = createIndexForIface(buffer);
+                buffer = createIndexForOthers(buffer);
+                buffer = createIndexForArray(buffer);
+            }
+
+            Feature feature;
+            feature.set_version(featureVersion);
             feature.set_data(buffer);
 
             FeatureStatus featureStatus;
-            featureStatus.set_status(Status::SUCCESS);
+            if (saveSuccess) {
+                featureStatus.set_status(Status::SUCCESS);
+            }
+            else {
+                featureStatus.set_status(Status::FAILED);
+                std::string errorMsg =
+                    TRANSLATE_ME("Save configuration for: (%s) failed, access right issue!", featureName.c_str());
+                featureStatus.set_error(errorMsg);
+            }
 
             FeatureAndStatus fs;
             *(fs.mutable_status())       = featureStatus;
             *(fs.mutable_feature())      = feature;
+
             mapFeaturesData[featureName] = fs;
         }
     }
+
     log_debug("Save configuration done");
+
     return (createSaveResponse(mapFeaturesData, m_configVersion)).save();
 }
 
 RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& query)
 {
-    log_debug("Restoring configuration...");
-    std::map<FeatureName, FeatureStatus> mapStatus;
+    log_debug("Restore configuration...");
 
     RestoreQuery                                 query1          = query;
     google::protobuf::Map<FeatureName, Feature>& mapFeaturesData = *(query1.mutable_map_features_data());
 
+    std::map<FeatureName, FeatureStatus> mapStatus;
+
     for (const auto& item : mapFeaturesData) {
         const std::string& featureName = item.first;
         const Feature&     feature     = item.second;
-        FeatureStatus      featureStatus;
-        bool               compatible = isVerstionCompatible(feature.version());
-        if (compatible) {
-            const std::string& configurationFileName = AUGEAS_FILES + m_parameters.at(featureName);
-            log_debug("Restoring configuration for: %s, with configuration file: %s", featureName.c_str(),
-                configurationFileName.c_str());
+        const std::string  fileName(m_parameters.at(featureName));
 
+        logDebug("Restore feature {}", featureName);
+        logDebug("configVersion: {}, feature.version: {}", m_configVersion, feature.version());
+
+        FeatureStatus featureStatus;
+
+        // data 1.x (augeas) && data 2.x (bulk restore)
+        bool compatible = isVersion_1_x(feature.version()) || isVersion_2_x(feature.version());
+
+        if (compatible) {
+            const std::string& configurationFileName = AUGEAS_FILES + fileName;
+            logDebug("Restoring feature {} (version: {}, file: {})",
+                featureName, feature.version(), configurationFileName);
+
+            // Get data member
             cxxtools::SerializationInfo siData;
             JSON::readFromString(feature.data(), siData);
-            // Get data member
-            int returnValue = setConfiguration(siData, configurationFileName);
+
+            int returnValue = -1; // failed (default)
+
+            if (isVersion_2_x(feature.version())) {
+                // data 2.x, bulk restore
+                if (siData.findMember(DATA_2_base64_encoded)) {
+                    std::string b64;
+                    siData.getMember(DATA_2_base64_encoded, b64);
+                    int r = fileRestoreFromBase64(fileName, b64);
+                    if (r != 0) {
+                        logError("fileRestoreFromBase64 failed (r: {}, file: {})", r, fileName);
+                    }
+                    else {
+                        logDebug("fileRestoreFromBase64 succeeded (file: {})", fileName);
+                        returnValue = 0; // bulk restore success
+                    }
+                }
+                else {
+                    logError("data {}: member {} is missing", feature.version(), DATA_2_base64_encoded);
+                }
+            }
+            else {
+                // data 1.x: restore with augeas
+                returnValue = setConfiguration(siData, configurationFileName);
+            }
+
             if (returnValue == 0) {
-                log_debug("Restore configuration done: %s succeed!", featureName.c_str());
+                logInfo("Restore {} succeed!", featureName);
                 featureStatus.set_status(Status::SUCCESS);
-            } else {
+
+                // dbg, dump restored file
+                fileDumpToConsole(fileName, "Restored: ");
+            }
+            else { // restore failed
+                logInfo("Restore {} failed, returnValue: {}", featureName, returnValue);
+
                 featureStatus.set_status(Status::FAILED);
                 std::string errorMsg =
                     TRANSLATE_ME("Restore configuration for: (%s) failed, access right issue!", featureName.c_str());
                 featureStatus.set_error(errorMsg);
                 log_error(featureStatus.error().c_str());
             }
-        } else {
+        }
+        else {
+            logError("Restore unavailable due to format compatibility");
+            logError("feature {} version: {}, configVersion: {}",
+                featureName, feature.version(), m_configVersion);
+
             std::string errorMsg =
                 TRANSLATE_ME("Config version (%s) is not compatible with the restore version request: (%s)",
                     m_configVersion.c_str(), feature.version().c_str());
             log_error(errorMsg.c_str());
+
             featureStatus.set_status(Status::FAILED);
             featureStatus.set_error(errorMsg);
         }
+
         mapStatus[featureName] = featureStatus;
     }
+
     log_debug("Restore configuration done");
     return (createRestoreResponse(mapStatus)).restore();
 }
@@ -230,12 +352,14 @@ void ConfigurationManager::sendResponse(const messagebus::Message& msg, const dt
         resp.metaData().emplace(messagebus::Message::SUBJECT, msg.metaData().at(messagebus::Message::SUBJECT));
         resp.metaData().emplace(messagebus::Message::FROM, m_parameters.at(AGENT_NAME_KEY));
         resp.metaData().emplace(messagebus::Message::TO, msg.metaData().find(messagebus::Message::FROM)->second);
-        resp.metaData().emplace(
-            messagebus::Message::CORRELATION_ID, msg.metaData().find(messagebus::Message::CORRELATION_ID)->second);
+        resp.metaData().emplace(messagebus::Message::CORRELATION_ID, msg.metaData().find(messagebus::Message::CORRELATION_ID)->second);
+
         m_msgBus->sendReply(msg.metaData().find(messagebus::Message::REPLY_TO)->second, resp);
-    } catch (messagebus::MessageBusException& ex) {
+    }
+    catch (messagebus::MessageBusException& ex) {
         log_error("Message bus error: %s", ex.what());
-    } catch (...) {
+    }
+    catch (...) {
         log_error("Unexpected error: unknown");
     }
 }
@@ -250,11 +374,20 @@ void ConfigurationManager::setConfigurationRecursive(cxxtools::SerializationInfo
 {
     cxxtools::SerializationInfo::Iterator it;
     for (it = si.begin(); it != si.end(); ++it) {
-        cxxtools::SerializationInfo*          member     = &(*it);
-        std::string                           memberName = member->name();
+        cxxtools::SerializationInfo* member     = &(*it);
+        std::string                  memberName = member->name();
+
+        // ignore non augeas members (secure, normally never reached)
+        if (memberName == DATA_2_base64_encoded) {
+            logWarn("Ignore unexpected augeas json member ({})", memberName);
+            continue;
+        }
+
+        // unapply augeas hotfixes
         memberName = removeIndexForIface(memberName);
         memberName = removeIndexForOthers(memberName);
         memberName = updateIndexForArray(memberName);
+
         if (member->category() == cxxtools::SerializationInfo::Category::Object) {
             std::string pathCompute = path;
             if (!pathCompute.empty()) {
@@ -384,7 +517,6 @@ void ConfigurationManager::dumpConfiguration(std::string& path)
 
 int ConfigurationManager::getAugeasFlags(std::string& augeasOpts)
 {
-    int returnValue = AUG_NONE;
     // Build static augeas option
     static std::map<const std::string, aug_flags> augFlags;
     augFlags["AUG_NONE"]                 = AUG_NONE;
@@ -398,6 +530,8 @@ int ConfigurationManager::getAugeasFlags(std::string& augeasOpts)
     augFlags["AUG_ENABLE_SPAN"]          = AUG_ENABLE_SPAN;
     augFlags["AUG_NO_ERR_CLOSE"]         = AUG_NO_ERR_CLOSE;
     augFlags["AUG_TRACE_MODULE_LOADING"] = AUG_TRACE_MODULE_LOADING;
+
+    int returnValue = AUG_NONE;
 
     if (augeasOpts.size() > 1) {
         // Replace '|' by ' '
@@ -420,20 +554,8 @@ int ConfigurationManager::getAugeasFlags(std::string& augeasOpts)
     return returnValue;
 }
 
-bool ConfigurationManager::isVerstionCompatible(const std::string& version)
-{
-    bool comptible      = false;
-    int  configVersion  = std::stoi(m_configVersion);
-    int  requestVersion = std::stoi(version);
-
-    if (configVersion >= requestVersion) {
-        comptible = true;
-    }
-    return comptible;
-}
-
 //__>> HOTFIX Network config is not a proper JSON due to several "iface" attribute name in the Json
-std::string createIndexForIface(const std::string& json)
+static std::string createIndexForIface(const std::string& json)
 {
     std::regex  regex("\"iface\"");
     std::smatch submatch;
@@ -454,7 +576,7 @@ std::string createIndexForIface(const std::string& json)
     return output;
 }
 
-std::string removeIndexForIface(const std::string& member)
+static std::string removeIndexForIface(const std::string& member)
 {
     std::regex regex("^ifacename\\[(\\d+)\\]$");
     std::smatch submatch;
@@ -474,7 +596,7 @@ std::string removeIndexForIface(const std::string& member)
 // Need to indexed these attributes to have unique key for the json parser
 // eg: Replace "entry" by "entry.#index"
 //     Replace "dns-nameserver" by "dns-nameserver.#index"
-std::string createIndexForOthers(const std::string& json)
+static std::string createIndexForOthers(const std::string& json)
 {
     std::regex  regex("\"(entry|dns-nameserver)\"");
     std::smatch submatch;
@@ -498,7 +620,7 @@ std::string createIndexForOthers(const std::string& json)
 // remove previously added index for key which is not needed for set value in augeas
 // e.g: "entry.#index" -> "entry"
 //      "dns-nameserver.#index" -> "dns-nameserver"
-std::string removeIndexForOthers(const std::string& member)
+static std::string removeIndexForOthers(const std::string& member)
 {
     std::regex  regex("^(entry|dns-nameserver)\\.\\#\\d+$");
     std::smatch submatch;
@@ -518,7 +640,7 @@ std::string removeIndexForOthers(const std::string& member)
 //     { "my_array": { "array": { "string":"127.0.0.1", "string":"127.0.0.2", "string":"127.0.0.3" }}}
 // Need to indexed the "string" to have unique key for the json parser:
 //     { "my_array": { "array":{ "string.#1":"127.0.0.1", "string.#2":"127.0.0.2", "string.#3":"127.0.0.3" }}}
-std::string createIndexForArray(const std::string& json)
+static std::string createIndexForArray(const std::string& json)
 {
     std::regex  regex("\"array\"\\:\\{\"string\"");
     std::regex  regex2("\"string\"\\:");
@@ -556,7 +678,7 @@ std::string createIndexForArray(const std::string& json)
 }
 
 // replace "string.#index" by "string[index]" for set value in augeas for array
-std::string updateIndexForArray(const std::string& member)
+static std::string updateIndexForArray(const std::string& member)
 {
     std::regex  regex("^string\\.\\#(\\d+)$");
     std::smatch submatch;

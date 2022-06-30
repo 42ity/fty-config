@@ -21,15 +21,16 @@
 
 #pragma once
 
-//  Add your own public definitions here, if you need them
-constexpr auto AGENT_NAME_KEY            = "agentName";
-constexpr auto AGENT_NAME                = "fty-config";
-constexpr auto ENDPOINT_KEY              = "endPoint";
-constexpr auto DEFAULT_ENDPOINT          = "ipc://@/malamute";
-constexpr auto CONFIG_DEFAULT_LOG_CONFIG = "/etc/fty/ftylog.cfg";
+// Public definition
+constexpr auto AGENT_NAME_KEY   = "agentName";
+constexpr auto AGENT_NAME       = "fty-config";
+constexpr auto ENDPOINT_KEY     = "endPoint";
+constexpr auto DEFAULT_ENDPOINT = "ipc://@/malamute";
+
 // Queue definition
-constexpr auto QUEUE_NAME_KEY            = "queueName";
-constexpr auto MSG_QUEUE_NAME            = "ETN.Q.IPMCORE.CONFIG";
+constexpr auto QUEUE_NAME_KEY = "queueName";
+constexpr auto MSG_QUEUE_NAME = "ETN.Q.IPMCORE.CONFIG";
+
 // Features definition
 constexpr auto MONITORING_FEATURE_NAME   = "monitoring";
 constexpr auto NOTIFICATION_FEATURE_NAME = "notification";
@@ -38,13 +39,14 @@ constexpr auto USER_SESSION_FEATURE_NAME = "user-session";
 constexpr auto DISCOVERY                 = "discovery";
 constexpr auto MASS_MANAGEMENT           = "etn-mass-management";
 constexpr auto NETWORK                   = "network";
-constexpr auto NETWORK_AGENT_SETTINGS    = "network-agent-settings";
 constexpr auto NETWORK_HOST_NAME         = "network-host-name";
+constexpr auto NETWORK_AGENT_SETTINGS    = "network-agent-settings";
 
 // Augeas definition
-constexpr auto AUGEAS_LENS_PATH          = "AugeasLensPath";
-constexpr auto AUGEAS_OPTIONS            = "augeasOptions";
+constexpr auto AUGEAS_LENS_PATH = "AugeasLensPath";
+constexpr auto AUGEAS_OPTIONS   = "augeasOptions";
+
 // Properties definition
-constexpr auto CONFIG_VERSION_KEY        = "version";
-constexpr auto ACTIVE_VERSION            = "1.0";
-constexpr auto DATA_MEMBER               = "data";
+constexpr auto CONFIG_VERSION_KEY = "version";
+constexpr auto CONFIG_VERSION     = "1.0"; //current (default)
+constexpr auto DATA_MEMBER        = "data";

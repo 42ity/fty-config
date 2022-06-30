@@ -22,21 +22,27 @@
 
 #include "fty-config.h"
 #include "fty_config_manager.h"
-#include <augeas.h>
-#include <condition_variable>
-#include <csignal>
 #include <fty_common_mlm_zconfig.h>
 #include <fty_log.h>
+#include <augeas.h>
+
+#include <condition_variable>
+#include <csignal>
 #include <map>
 #include <mutex>
 #include <sstream>
 
-// functions
-
-void                           usage();
 static bool                    g_exit = false;
 static std::condition_variable g_cv;
 static std::mutex              g_cvMutex;
+
+static void usage()
+{
+    puts((AGENT_NAME + std::string(" [options] ...")).c_str());
+    puts("  -v|--verbose        verbose test output");
+    puts("  -h|--help           this information");
+    puts("  -c|--config         path to config file");
+}
 
 static void sigHandler(int)
 {
@@ -67,21 +73,18 @@ static void setSignalHandler()
 
 int main(int argc, char* argv[])
 {
-    using Parameters = std::map<std::string, std::string>;
-    Parameters paramsConfig;
-
     // Set signal handler
     setSignalHandler();
     // Set terminate pg handler
     std::set_terminate(terminateHandler);
 
-    ftylog_setInstance(AGENT_NAME, "");
+    ftylog_setInstance(AGENT_NAME, FTY_COMMON_LOGGING_DEFAULT_CFG);
 
-    int   argn;
     char* config_file = nullptr;
     bool  verbose     = false;
+
     // Parse command line
-    for (argn = 1; argn < argc; argn++) {
+    for (int argn = 1; argn < argc; argn++) {
         char* param = nullptr;
         if (argn < argc - 1)
             param = argv[argn + 1];
@@ -99,6 +102,8 @@ int main(int argc, char* argv[])
     }
 
     // Default configuration.
+    std::map<std::string, std::string> paramsConfig;
+
     paramsConfig[ENDPOINT_KEY]   = DEFAULT_ENDPOINT;
     paramsConfig[AGENT_NAME_KEY] = AGENT_NAME;
     paramsConfig[QUEUE_NAME_KEY] = MSG_QUEUE_NAME;
@@ -116,7 +121,7 @@ int main(int argc, char* argv[])
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
     paramsConfig[AUGEAS_OPTIONS]   = AUG_NONE;
     // version
-    paramsConfig[CONFIG_VERSION_KEY] = ACTIVE_VERSION;
+    paramsConfig[CONFIG_VERSION_KEY] = CONFIG_VERSION;
 
     if (config_file) {
         log_debug((AGENT_NAME + std::string(": loading configuration file from ") + config_file).c_str());
@@ -140,12 +145,12 @@ int main(int argc, char* argv[])
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");
         paramsConfig[AUGEAS_OPTIONS]   = config.getEntry("augeas/augeasOptions", "0");
         // version
-        paramsConfig[CONFIG_VERSION_KEY] = config.getEntry("config/version", ACTIVE_VERSION);
+        paramsConfig[CONFIG_VERSION_KEY] = config.getEntry("config/version", CONFIG_VERSION);
     }
 
     if (verbose) {
-        ftylog_setVeboseMode(ftylog_getInstance());
-        log_trace("Verbose mode OK");
+        ftylog_setVerboseMode(ftylog_getInstance());
+        log_trace("Set verbose mode");
     }
 
     log_info((AGENT_NAME + std::string(" starting")).c_str());
@@ -163,12 +168,4 @@ int main(int argc, char* argv[])
 
     // Exit application
     return EXIT_SUCCESS;
-}
-
-void usage()
-{
-    puts((AGENT_NAME + std::string(" [options] ...")).c_str());
-    puts("  -v|--verbose        verbose test output");
-    puts("  -h|--help           this information");
-    puts("  -c|--config         path to config file");
 }
