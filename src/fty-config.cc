@@ -112,7 +112,8 @@ int main(int argc, char* argv[])
     paramsConfig[NOTIFICATION_FEATURE_NAME] = "/etc/fty-email/fty-email.cfg";
     paramsConfig[AUTOMATION_SETTINGS]       = "/etc/fty/etn-automation.cfg";
     paramsConfig[USER_SESSION_FEATURE_NAME] = "/etc/fty/fty-session.cfg";
-    paramsConfig[DISCOVERY]                 = "/etc/fty-discovery/fty-discovery.cfg";
+    paramsConfig[DISCOVERY_SETTINGS]        = "/etc/fty-discovery-ng/config-discovery.conf";
+    paramsConfig[DISCOVERY_AGENT_SETTINGS]  = "/etc/fty-discovery-ng/discovery.conf";
     paramsConfig[NETWORK]                   = "/etc/network/interfaces";
     paramsConfig[NETWORK_AGENT_SETTINGS]    = "/var/lib/fty/etn-ipm2-network/etn-ipm2-network.json";
     paramsConfig[NETWORK_HOST_NAME]         = "/etc/hostname";
@@ -136,7 +137,8 @@ int main(int argc, char* argv[])
         paramsConfig[NOTIFICATION_FEATURE_NAME] = config.getEntry("available-features/notification", "");
         paramsConfig[AUTOMATION_SETTINGS]       = config.getEntry("available-features/automation-settings", "");
         paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available-features/user-session", "");
-        paramsConfig[DISCOVERY]                 = config.getEntry("available-features/discovery", "");
+        paramsConfig[DISCOVERY_SETTINGS]        = config.getEntry("available-features/discovery-ng-settings", "");
+        paramsConfig[DISCOVERY_AGENT_SETTINGS]  = config.getEntry("available-features/discovery-ng-agent-settings", "");
         paramsConfig[NETWORK]                   = config.getEntry("available-features/network", "");
         paramsConfig[NETWORK_AGENT_SETTINGS]    = config.getEntry("available-features/network-agent-settings", "");
         paramsConfig[NETWORK_HOST_NAME]         = config.getEntry("available-features/network-host-name", "");
