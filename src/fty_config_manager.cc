@@ -159,7 +159,9 @@ static bool isFeature_Version2(const std::string& featureName)
 {
     return (featureName == NETWORK)
         || (featureName == NETWORK_HOST_NAME)
-        || (featureName == NETWORK_AGENT_SETTINGS);
+        || (featureName == NETWORK_AGENT_SETTINGS)
+        || (featureName == DISCOVERY_SETTINGS)
+        || (featureName == DISCOVERY_AGENT_SETTINGS);
 }
 
 SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)

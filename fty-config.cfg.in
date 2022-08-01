@@ -16,7 +16,8 @@ available-features
     notification = /etc/fty-email/fty-email.cfg
     automation-settings = /etc/fty/etn-automation.cfg
     user-session = /etc/fty/fty-session.cfg
-    discovery = /etc/fty-discovery/fty-discovery.cfg
+    discovery-ng-settings = /etc/fty-discovery-ng/config-discovery.conf
+    discovery-ng-agent-settings = /etc/fty-discovery-ng/discovery.conf
     etn-mass-management = /var/lib/fty/etn-mass-management/settings.cfg
     network = /etc/network/interfaces
     network-host-name = /etc/hostname
