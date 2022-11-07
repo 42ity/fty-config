@@ -41,7 +41,7 @@ static void usage()
     puts((AGENT_NAME + std::string(" [options] ...")).c_str());
     puts("  -v|--verbose        verbose test output");
     puts("  -h|--help           this information");
-    puts("  -c|--config         path to config file");
+    puts("  -c|--config <path>  path to config file");
 }
 
 static void sigHandler(int)
@@ -85,19 +85,21 @@ int main(int argc, char* argv[])
 
     // Parse command line
     for (int argn = 1; argn < argc; argn++) {
-        char* param = nullptr;
-        if (argn < argc - 1)
-            param = argv[argn + 1];
+        char* param = (argn < (argc - 1)) ? argv[argn + 1] : nullptr;
 
-        if (strcmp(argv[argn], "--help") == 0 || strcmp(argv[argn], "-h") == 0) {
+        if (streq(argv[argn], "--help") || streq(argv[argn], "-h")) {
             usage();
             return EXIT_SUCCESS;
-        } else if (strcmp(argv[argn], "--verbose") == 0 || strcmp(argv[argn], "-v") == 0) {
+        } else if (streq(argv[argn], "--verbose") || streq(argv[argn], "-v")) {
             verbose = true;
-        } else if (strcmp(argv[argn], "--config") == 0 || strcmp(argv[argn], "-c") == 0) {
-            if (param)
+        } else if (streq(argv[argn], "--config") || streq(argv[argn], "-c")) {
+            if (param) {
                 config_file = param;
-            ++argn;
+                argn++;
+            } else {
+                fprintf(stderr, "%s: missing <path> argument\n", argv[argn]);
+                return EXIT_FAILURE;
+            }
         }
     }
 
@@ -107,6 +109,7 @@ int main(int argc, char* argv[])
     paramsConfig[ENDPOINT_KEY]   = DEFAULT_ENDPOINT;
     paramsConfig[AGENT_NAME_KEY] = AGENT_NAME;
     paramsConfig[QUEUE_NAME_KEY] = MSG_QUEUE_NAME;
+
     // Default configuration files path.
     paramsConfig[MONITORING_FEATURE_NAME]   = "/etc/fty-nut/fty-nut.cfg";
     paramsConfig[NOTIFICATION_FEATURE_NAME] = "/etc/fty-email/fty-email.cfg";
@@ -114,24 +117,30 @@ int main(int argc, char* argv[])
     paramsConfig[USER_SESSION_FEATURE_NAME] = "/etc/fty/fty-session.cfg";
     paramsConfig[DISCOVERY_SETTINGS]        = "/etc/fty-discovery-ng/config-discovery.conf";
     paramsConfig[DISCOVERY_AGENT_SETTINGS]  = "/etc/fty-discovery-ng/discovery.conf";
+    paramsConfig[MASS_MANAGEMENT]           = "/var/lib/fty/etn-mass-management/settings.cfg";
     paramsConfig[NETWORK]                   = "/etc/network/interfaces";
     paramsConfig[NETWORK_AGENT_SETTINGS]    = "/var/lib/fty/etn-ipm2-network/etn-ipm2-network.json";
     paramsConfig[NETWORK_HOST_NAME]         = "/etc/hostname";
-    paramsConfig[MASS_MANAGEMENT]           = "/var/lib/fty/etn-mass-management/settings.cfg";
+    paramsConfig[NETWORK_PROXY]             = "/etc/default/fty-proxy";
+
     // Default augeas configuration.
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
     paramsConfig[AUGEAS_OPTIONS]   = AUG_NONE;
+
     // version
     paramsConfig[CONFIG_VERSION_KEY] = CONFIG_VERSION;
 
     if (config_file) {
         log_debug((AGENT_NAME + std::string(": loading configuration file from ") + config_file).c_str());
         mlm::ZConfig config(config_file);
+
         // verbose mode
         std::istringstream(config.getEntry("server/verbose", "0")) >> verbose;
+
         // Message bus configuration.
         paramsConfig[ENDPOINT_KEY]   = config.getEntry("srr-msg-bus/endpoint", DEFAULT_ENDPOINT);
         paramsConfig[QUEUE_NAME_KEY] = config.getEntry("srr-msg-bus/queueName", MSG_QUEUE_NAME);
+
         // Configuration file path
         paramsConfig[MONITORING_FEATURE_NAME]   = config.getEntry("available-features/monitoring", "");
         paramsConfig[NOTIFICATION_FEATURE_NAME] = config.getEntry("available-features/notification", "");
@@ -139,13 +148,16 @@ int main(int argc, char* argv[])
         paramsConfig[USER_SESSION_FEATURE_NAME] = config.getEntry("available-features/user-session", "");
         paramsConfig[DISCOVERY_SETTINGS]        = config.getEntry("available-features/discovery-ng-settings", "");
         paramsConfig[DISCOVERY_AGENT_SETTINGS]  = config.getEntry("available-features/discovery-ng-agent-settings", "");
+        paramsConfig[MASS_MANAGEMENT]           = config.getEntry("available-features/etn-mass-management", "");
         paramsConfig[NETWORK]                   = config.getEntry("available-features/network", "");
         paramsConfig[NETWORK_AGENT_SETTINGS]    = config.getEntry("available-features/network-agent-settings", "");
         paramsConfig[NETWORK_HOST_NAME]         = config.getEntry("available-features/network-host-name", "");
-        paramsConfig[MASS_MANAGEMENT]           = config.getEntry("available-features/etn-mass-management", "");
+        paramsConfig[NETWORK_PROXY]             = config.getEntry("available-features/network-proxy", "");
+
         // Augeas configuration
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");
         paramsConfig[AUGEAS_OPTIONS]   = config.getEntry("augeas/augeasOptions", "0");
+
         // version
         paramsConfig[CONFIG_VERSION_KEY] = config.getEntry("config/version", CONFIG_VERSION);
     }

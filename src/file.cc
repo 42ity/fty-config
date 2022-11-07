@@ -87,23 +87,22 @@ int fileReadToBase64(const std::string& fileName, std::string& b64)
     b64.clear();
 
     char* buffer = nullptr;
+    int ret = 0;
     try {
         size_t size = 0;
         buffer = s_fileRead(fileName, size);
         if (buffer && (size != 0)) {
             b64 = cxxtools::Base64Codec::encode(buffer, unsigned(size));
         }
-        if (buffer)
-            { free(buffer); }
-        return 0;
     }
     catch (const std::exception& e) {
         logError("{}", e.what());
+        ret = -1;
     }
 
     if (buffer)
         { free(buffer); }
-    return -1;
+    return ret;
 }
 
 // write fileName content from b64 decoded
