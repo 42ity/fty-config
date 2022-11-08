@@ -160,6 +160,7 @@ static bool isFeature_Version2(const std::string& featureName)
     return (featureName == NETWORK)
         || (featureName == NETWORK_HOST_NAME)
         || (featureName == NETWORK_AGENT_SETTINGS)
+        || (featureName == NETWORK_PROXY)
         || (featureName == DISCOVERY_SETTINGS)
         || (featureName == DISCOVERY_AGENT_SETTINGS);
 }
@@ -173,15 +174,13 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
     for (const auto& featureName : query.features()) {
         // Get the full configuration file path name from class variable m_parameters
         const std::string fileName(m_parameters.at(featureName));
-        std::string fileNameFullPath = AUGEAS_FILES + fileName + ANY_NODES;
 
-        log_debug("Configuration augeas file: %s", fileNameFullPath.c_str());
+        log_debug("Save Configuration file: %s", fileName.c_str());
 
         // Get the last pattern
         std::size_t found = fileName.find_last_of(FILE_SEPARATOR);
         if (found != std::string::npos) {
             std::string featureVersion{m_configVersion}; // current (default)
-            std::string confFileName = fileName.substr(found + 1);
 
             cxxtools::SerializationInfo si;
             bool useAugeas = false; // 'augeas conf.' vs. 'bulk save'
@@ -202,6 +201,8 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
             }
             else {
                 // data 1.x, get augeas configuration
+                std::string fileNameFullPath = AUGEAS_FILES + fileName + ANY_NODES;
+                std::string confFileName = fileName.substr(found + 1);
                 getConfigurationToJson(si, fileNameFullPath, confFileName);
                 saveSuccess = true;
                 useAugeas = true;
