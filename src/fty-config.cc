@@ -38,10 +38,10 @@ static std::mutex              g_cvMutex;
 
 static void usage()
 {
-    puts((AGENT_NAME + std::string(" [options] ...")).c_str());
-    puts("  -v|--verbose        verbose test output");
-    puts("  -h|--help           this information");
-    puts("  -c|--config <path>  path to config file");
+    printf("%s [options]\n", AGENT_NAME);
+    printf("  -h|--help           this information\n");
+    printf("  -v|--verbose        verbose test output\n");
+    printf("  -c|--config <path>  path to config file\n");
 }
 
 static void sigHandler(int)
@@ -65,9 +65,9 @@ static void setSignalHandler()
 /**
  * Set Signal handler
  */
-[[noreturn]] static void terminateHandler()
+static void terminateHandler()
 {
-    log_error((AGENT_NAME + std::string(" Error")).c_str());
+    log_error("%s: Error", AGENT_NAME);
     exit(EXIT_FAILURE);
 }
 
@@ -78,30 +78,36 @@ int main(int argc, char* argv[])
     // Set terminate pg handler
     std::set_terminate(terminateHandler);
 
-    ftylog_setInstance(AGENT_NAME, FTY_COMMON_LOGGING_DEFAULT_CFG);
-
     char* config_file = nullptr;
     bool  verbose     = false;
 
     // Parse command line
     for (int argn = 1; argn < argc; argn++) {
+        char* arg = argv[argn];
         char* param = (argn < (argc - 1)) ? argv[argn + 1] : nullptr;
 
-        if (streq(argv[argn], "--help") || streq(argv[argn], "-h")) {
+        if (streq(arg, "--help") || streq(arg, "-h")) {
             usage();
             return EXIT_SUCCESS;
-        } else if (streq(argv[argn], "--verbose") || streq(argv[argn], "-v")) {
+        }
+        else if (streq(arg, "--verbose") || streq(arg, "-v")) {
             verbose = true;
-        } else if (streq(argv[argn], "--config") || streq(argv[argn], "-c")) {
-            if (param) {
-                config_file = param;
-                argn++;
-            } else {
-                fprintf(stderr, "%s: missing <path> argument\n", argv[argn]);
+        }
+        else if (streq(arg, "--config") || streq(arg, "-c")) {
+            if (!param) {
+                fprintf(stderr, "%s: missing <path> argument\n", arg);
                 return EXIT_FAILURE;
             }
+            config_file = param;
+            argn++;
+        }
+        else {
+            fprintf(stderr, "%s: unknown argument\n", arg);
+            return EXIT_FAILURE;
         }
     }
+
+    ftylog_setInstance(AGENT_NAME, FTY_COMMON_LOGGING_DEFAULT_CFG);
 
     // Default configuration.
     std::map<std::string, std::string> paramsConfig;
@@ -167,10 +173,12 @@ int main(int argc, char* argv[])
         log_trace("Set verbose mode");
     }
 
-    log_info((AGENT_NAME + std::string(" starting")).c_str());
+    log_info("%s: Starting...", AGENT_NAME);
 
     // Start config agent
     config::ConfigurationManager configManager(paramsConfig);
+
+    log_info("%s: Started", AGENT_NAME);
 
     // wait until interrupt
     std::unique_lock<std::mutex> lock(g_cvMutex);
@@ -178,8 +186,7 @@ int main(int argc, char* argv[])
         return g_exit;
     });
 
-    log_info((AGENT_NAME + std::string(" interrupted")).c_str());
+    log_info("%s: Ended", AGENT_NAME);
 
-    // Exit application
     return EXIT_SUCCESS;
 }

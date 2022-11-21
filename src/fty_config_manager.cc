@@ -140,7 +140,7 @@ void ConfigurationManager::handleRequest(messagebus::Message msg)
         dataResponse << response;
         sendResponse(msg, dataResponse);
     } catch (const std::exception& ex) {
-        log_error(ex.what());
+        log_error("%s", ex.what());
     }
 }
 
@@ -175,7 +175,7 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
         // Get the full configuration file path name from class variable m_parameters
         const std::string fileName(m_parameters.at(featureName));
 
-        log_debug("Save Configuration file: %s", fileName.c_str());
+        logDebug("Save feature {} (file: {})", featureName, fileName);
 
         // Get the last pattern
         std::size_t found = fileName.find_last_of(FILE_SEPARATOR);
@@ -250,7 +250,7 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
 
 RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& query)
 {
-    log_debug("Restore configuration...");
+    logDebug("Restore configuration... (configVersion: {})", m_configVersion);
 
     RestoreQuery                                 query1          = query;
     google::protobuf::Map<FeatureName, Feature>& mapFeaturesData = *(query1.mutable_map_features_data());
@@ -262,8 +262,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
         const Feature&     feature     = item.second;
         const std::string  fileName(m_parameters.at(featureName));
 
-        logDebug("Restore feature {}", featureName);
-        logDebug("configVersion: {}, feature.version: {}", m_configVersion, feature.version());
+        logDebug("Restore feature {} (version: {}, file: {})", featureName, feature.version(), fileName);
 
         FeatureStatus featureStatus;
 
@@ -271,10 +270,6 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
         bool compatible = isVersion_1_x(feature.version()) || isVersion_2_x(feature.version());
 
         if (compatible) {
-            const std::string& configurationFileName = AUGEAS_FILES + fileName;
-            logDebug("Restoring feature {} (version: {}, file: {})",
-                featureName, feature.version(), configurationFileName);
-
             // Get data member
             cxxtools::SerializationInfo siData;
             JSON::readFromString(feature.data(), siData);
@@ -301,6 +296,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
             }
             else {
                 // data 1.x: restore with augeas
+                const std::string configurationFileName = AUGEAS_FILES + fileName;
                 returnValue = setConfiguration(siData, configurationFileName);
             }
 
@@ -318,18 +314,17 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                 std::string errorMsg =
                     TRANSLATE_ME("Restore configuration for: (%s) failed, access right issue!", featureName.c_str());
                 featureStatus.set_error(errorMsg);
-                log_error(featureStatus.error().c_str());
+                log_error("%s", featureStatus.error().c_str());
             }
         }
         else {
-            logError("Restore unavailable due to format compatibility");
-            logError("feature {} version: {}, configVersion: {}",
+            logError("Restore unavailable due to format compatibility (feature {}, version: {}, configVersion: {})",
                 featureName, feature.version(), m_configVersion);
 
             std::string errorMsg =
                 TRANSLATE_ME("Config version (%s) is not compatible with the restore version request: (%s)",
                     m_configVersion.c_str(), feature.version().c_str());
-            log_error(errorMsg.c_str());
+            log_error("%s", errorMsg.c_str());
 
             featureStatus.set_status(Status::FAILED);
             featureStatus.set_error(errorMsg);
