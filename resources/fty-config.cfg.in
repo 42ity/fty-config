@@ -1,4 +1,4 @@
-#   fty-config configuration
+#   @PROJECT_NAME@ settings
 
 server
     timeout = 10000     #   Client connection timeout, msec
@@ -29,4 +29,4 @@ augeas
     augeasOptions = AUG_SAVE_BACKUP # Values availabes separate by '|' AUG_NONE AUG_TRACE_MODULE_LOADING AUG_SAVE_BACKUP
 
 config
-    version = 1.0 # Config version
+    version = 1.0 # current version (default)

@@ -9,46 +9,26 @@ project(fty-config
 )
 
 ########################################################################################################################
+
 find_package(fty-cmake PATHS ${CMAKE_BINARY_DIR}/fty-cmake)
-########################################################################################################################
-
-etn_target(exe ${PROJECT_NAME}
-    SOURCES
-        src/fty_config_exception.h
-        src/fty-config.h
-        src/fty-config.cc
-        src/fty_config_manager.cc
-        src/fty_config_manager.h
-        src/file.cc
-        src/file.h
-    FLAGS
-        -Wno-disabled-macro-expansion
-    USES
-        cxxtools
-        protobuf
-        augeas
-        fty_common
-        fty_common_dto
-        fty_common_logging
-        fty_common_messagebus
-        fty_common_mlm
-)
 
 ########################################################################################################################
-install(FILES zconfig.aug DESTINATION /usr/share/bios/lenses)
-########################################################################################################################
-etn_configure_file(
-    ${PROJECT_NAME}.service.in
-# Install
 
-    TARGET      ${PROJECT_NAME}
-    DESTINATION /usr/lib/systemd/system/
-)
-########################################################################################################################
-etn_configure_file(
-    ${PROJECT_NAME}.cfg.in
+add_subdirectory(agent)
 
-    TARGET      ${PROJECT_NAME}
-    DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/fty-config/
-)
+set(res "resources")
+
+## zconfig.aug -> usr/share/bios/lenses/
+install(FILES "${res}/zconfig.aug" DESTINATION "${CMAKE_INSTALL_FULL_DATAROOTDIR}/bios/lenses/")
+
+## .service -> lib/systemd/system/
+set(file "${PROJECT_NAME}.service")
+configure_file("${PROJECT_SOURCE_DIR}/${res}/${file}.in" "${PROJECT_BINARY_DIR}/${res}/${file}" @ONLY)
+install(FILES "${PROJECT_BINARY_DIR}/${res}/${file}" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/systemd/system/")
+
+## .cfg -> etc/
+set(file "${PROJECT_NAME}.cfg")
+configure_file("${PROJECT_SOURCE_DIR}/${res}/${file}.in" "${PROJECT_BINARY_DIR}/${res}/${file}" @ONLY)
+install(FILES "${PROJECT_BINARY_DIR}/${res}/${file}" DESTINATION "${CMAKE_INSTALL_FULL_SYSCONFDIR}/${PROJECT_NAME}/")
+
 ########################################################################################################################
