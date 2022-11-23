@@ -84,7 +84,7 @@ ConfigurationManager::ConfigurationManager(const std::map<std::string, std::stri
 void ConfigurationManager::init()
 {
     try {
-        logDebug("init");
+        logDebug("initialization");
 
         // Augeas tool init
         int augeasOpt = getAugeasFlags(m_parameters.at(AUGEAS_OPTIONS));
@@ -125,22 +125,28 @@ void ConfigurationManager::init()
 void ConfigurationManager::handleRequest(messagebus::Message msg)
 {
     try {
-        log_debug("Configuration handle request");
-        // Load augeas for any request (to avoid any cache).
+        log_debug("handleRequest...");
+
+        // Load augeas for any request (to avoid any cache)
         aug_load(m_aug.get());
 
-        dto::UserData data = msg.userData();
         // Get the query
         Query query;
+        dto::UserData data = msg.userData();
         data >> query;
+
         // Process the query
         Response response = m_processor.processQuery(query);
+
         // Send the response
         dto::UserData dataResponse;
         dataResponse << response;
         sendResponse(msg, dataResponse);
-    } catch (const std::exception& ex) {
-        log_error("%s", ex.what());
+
+        log_debug("handleRequest succeeded");
+   }
+    catch (const std::exception& ex) {
+        log_error("handleRequest error: %s", ex.what());
     }
 }
 
@@ -252,8 +258,8 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
 {
     logDebug("Restore configuration... (configVersion: {})", m_configVersion);
 
-    RestoreQuery                                 query1          = query;
-    google::protobuf::Map<FeatureName, Feature>& mapFeaturesData = *(query1.mutable_map_features_data());
+    RestoreQuery queryAux = query;
+    google::protobuf::Map<FeatureName, Feature>& mapFeaturesData = *(queryAux.mutable_map_features_data());
 
     std::map<FeatureName, FeatureStatus> mapStatus;
 
@@ -301,7 +307,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
             }
 
             if (returnValue == 0) {
-                logInfo("Restore {} succeed!", featureName);
+                logInfo("Restore {} succeed", featureName);
                 featureStatus.set_status(Status::SUCCESS);
 
                 // dbg, dump restored file
@@ -424,7 +430,7 @@ void ConfigurationManager::getConfigurationToJson(
     cxxtools::SerializationInfo& si, std::string& path, std::string& rootMember)
 {
     std::smatch arrayMatch;
-    char**      matches;
+    char**      matches = nullptr;
     int         nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
     // no matches, stop it.
@@ -493,7 +499,7 @@ std::vector<std::string> ConfigurationManager::findMembersFromMatch(
 
 void ConfigurationManager::dumpConfiguration(std::string& path)
 {
-    char** matches;
+    char** matches = nullptr;
     int    nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
     // Stop if not matches.

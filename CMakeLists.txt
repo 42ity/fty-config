@@ -5,7 +5,7 @@ cmake_policy(VERSION 3.13)
 
 project(fty-config
     VERSION 1.0.0
-    DESCRIPTION "Configuration agent for 42ITy ecosystem"
+    DESCRIPTION "fty-config SRR agent"
 )
 
 ########################################################################################################################
