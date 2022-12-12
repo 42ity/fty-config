@@ -84,7 +84,7 @@ ConfigurationManager::ConfigurationManager(const std::map<std::string, std::stri
 void ConfigurationManager::init()
 {
     try {
-        logDebug("init");
+        logDebug("initialization");
 
         // Augeas tool init
         int augeasOpt = getAugeasFlags(m_parameters.at(AUGEAS_OPTIONS));
@@ -125,22 +125,28 @@ void ConfigurationManager::init()
 void ConfigurationManager::handleRequest(messagebus::Message msg)
 {
     try {
-        log_debug("Configuration handle request");
-        // Load augeas for any request (to avoid any cache).
+        log_debug("handleRequest...");
+
+        // Load augeas for any request (to avoid any cache)
         aug_load(m_aug.get());
 
-        dto::UserData data = msg.userData();
         // Get the query
         Query query;
+        dto::UserData data = msg.userData();
         data >> query;
+
         // Process the query
         Response response = m_processor.processQuery(query);
+
         // Send the response
         dto::UserData dataResponse;
         dataResponse << response;
         sendResponse(msg, dataResponse);
-    } catch (const std::exception& ex) {
-        log_error(ex.what());
+
+        log_debug("handleRequest succeeded");
+   }
+    catch (const std::exception& ex) {
+        log_error("handleRequest error: %s", ex.what());
     }
 }
 
@@ -175,7 +181,7 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
         // Get the full configuration file path name from class variable m_parameters
         const std::string fileName(m_parameters.at(featureName));
 
-        log_debug("Save Configuration file: %s", fileName.c_str());
+        logDebug("Save feature {} (file: {})", featureName, fileName);
 
         // Get the last pattern
         std::size_t found = fileName.find_last_of(FILE_SEPARATOR);
@@ -250,10 +256,10 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
 
 RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& query)
 {
-    log_debug("Restore configuration...");
+    logDebug("Restore configuration... (configVersion: {})", m_configVersion);
 
-    RestoreQuery                                 query1          = query;
-    google::protobuf::Map<FeatureName, Feature>& mapFeaturesData = *(query1.mutable_map_features_data());
+    RestoreQuery queryAux = query;
+    google::protobuf::Map<FeatureName, Feature>& mapFeaturesData = *(queryAux.mutable_map_features_data());
 
     std::map<FeatureName, FeatureStatus> mapStatus;
 
@@ -262,8 +268,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
         const Feature&     feature     = item.second;
         const std::string  fileName(m_parameters.at(featureName));
 
-        logDebug("Restore feature {}", featureName);
-        logDebug("configVersion: {}, feature.version: {}", m_configVersion, feature.version());
+        logDebug("Restore feature {} (version: {}, file: {})", featureName, feature.version(), fileName);
 
         FeatureStatus featureStatus;
 
@@ -271,10 +276,6 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
         bool compatible = isVersion_1_x(feature.version()) || isVersion_2_x(feature.version());
 
         if (compatible) {
-            const std::string& configurationFileName = AUGEAS_FILES + fileName;
-            logDebug("Restoring feature {} (version: {}, file: {})",
-                featureName, feature.version(), configurationFileName);
-
             // Get data member
             cxxtools::SerializationInfo siData;
             JSON::readFromString(feature.data(), siData);
@@ -301,11 +302,12 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
             }
             else {
                 // data 1.x: restore with augeas
+                const std::string configurationFileName = AUGEAS_FILES + fileName;
                 returnValue = setConfiguration(siData, configurationFileName);
             }
 
             if (returnValue == 0) {
-                logInfo("Restore {} succeed!", featureName);
+                logInfo("Restore {} succeed", featureName);
                 featureStatus.set_status(Status::SUCCESS);
 
                 // dbg, dump restored file
@@ -318,18 +320,17 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                 std::string errorMsg =
                     TRANSLATE_ME("Restore configuration for: (%s) failed, access right issue!", featureName.c_str());
                 featureStatus.set_error(errorMsg);
-                log_error(featureStatus.error().c_str());
+                log_error("%s", featureStatus.error().c_str());
             }
         }
         else {
-            logError("Restore unavailable due to format compatibility");
-            logError("feature {} version: {}, configVersion: {}",
+            logError("Restore unavailable due to format compatibility (feature {}, version: {}, configVersion: {})",
                 featureName, feature.version(), m_configVersion);
 
             std::string errorMsg =
                 TRANSLATE_ME("Config version (%s) is not compatible with the restore version request: (%s)",
                     m_configVersion.c_str(), feature.version().c_str());
-            log_error(errorMsg.c_str());
+            log_error("%s", errorMsg.c_str());
 
             featureStatus.set_status(Status::FAILED);
             featureStatus.set_error(errorMsg);
@@ -429,7 +430,7 @@ void ConfigurationManager::getConfigurationToJson(
     cxxtools::SerializationInfo& si, std::string& path, std::string& rootMember)
 {
     std::smatch arrayMatch;
-    char**      matches;
+    char**      matches = nullptr;
     int         nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
     // no matches, stop it.
@@ -498,7 +499,7 @@ std::vector<std::string> ConfigurationManager::findMembersFromMatch(
 
 void ConfigurationManager::dumpConfiguration(std::string& path)
 {
-    char** matches;
+    char** matches = nullptr;
     int    nmatches = aug_match(m_aug.get(), path.c_str(), &matches);
 
     // Stop if not matches.

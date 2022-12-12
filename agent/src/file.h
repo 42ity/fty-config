@@ -29,5 +29,5 @@ int fileReadToBase64(const std::string& fileName, std::string& b64);
 /// returns 0 if ok, else <0
 int fileRestoreFromBase64(const std::string& fileName, const std::string& b64);
 
-//dump fileName to console, log debug only
+/// dump fileName to console, log debug only
 void fileDumpToConsole(const std::string& fileName, const std::string& msg = "");
