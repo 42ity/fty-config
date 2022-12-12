@@ -43,6 +43,7 @@ constexpr auto NETWORK                   = "network";
 constexpr auto NETWORK_HOST_NAME         = "network-host-name";
 constexpr auto NETWORK_AGENT_SETTINGS    = "network-agent-settings";
 constexpr auto NETWORK_PROXY             = "network-proxy";
+constexpr auto TIMEZONE_SETTINGS         = "timezone-settings";
 
 // Augeas definition
 constexpr auto AUGEAS_LENS_PATH = "AugeasLensPath";
