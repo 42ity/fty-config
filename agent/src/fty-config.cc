@@ -129,6 +129,7 @@ int main(int argc, char* argv[])
     paramsConfig[NETWORK_HOST_NAME]         = "/etc/hostname";
     paramsConfig[NETWORK_PROXY]             = "/etc/default/fty-proxy";
     paramsConfig[TIMEZONE_SETTINGS]         = "/etc/fty/fty-datetime.cfg";
+    paramsConfig[NTP_SETTINGS]              = "/etc/ntp.conf";
 
     // Default augeas configuration.
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
@@ -161,6 +162,7 @@ int main(int argc, char* argv[])
         paramsConfig[NETWORK_HOST_NAME]         = config.getEntry("available-features/network-host-name", "");
         paramsConfig[NETWORK_PROXY]             = config.getEntry("available-features/network-proxy", "");
         paramsConfig[TIMEZONE_SETTINGS]         = config.getEntry("available-features/timezone-settings", "");
+        paramsConfig[NTP_SETTINGS]              = config.getEntry("available-features/ntp-settings", "");
 
         // Augeas configuration
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");

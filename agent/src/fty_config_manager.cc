@@ -30,6 +30,7 @@
 #include "fty-config.h"
 #include "fty_config_exception.h"
 #include "file.h"
+#include "ntp_service.h"
 #include <augeas.h>
 #include <fty_common.h>
 #include <iostream>
@@ -71,6 +72,7 @@ static std::string updateIndexForArray(const std::string& member);
 
 #define DATA_VERSION_2_0 "2.0" // data 2.0 (IPM 2.6)
 #define DATA_2_base64_encoded "base64_encoded" // data 2.x
+#define NTP_STATUS "ntp_status" // data 2.x
 
 const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
 
@@ -169,7 +171,8 @@ static bool isFeature_Version2(const std::string& featureName)
         || (featureName == NETWORK_PROXY)
         || (featureName == DISCOVERY_SETTINGS)
         || (featureName == DISCOVERY_AGENT_SETTINGS)
-        || (featureName == TIMEZONE_SETTINGS);
+        || (featureName == TIMEZONE_SETTINGS)
+        || (featureName == NTP_SETTINGS);
 }
 
 SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
@@ -202,6 +205,11 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
                 }
                 else {
                     si.addMember(DATA_2_base64_encoded) <<= b64;
+                    if(featureName == NTP_SETTINGS) {
+                        bool ntpStatus;
+                        ntpconfig::getNtpStatus(ntpStatus);
+                        si.addMember(NTP_STATUS) <<= ntpStatus;
+                    }
                     featureVersion = DATA_VERSION_2_0; // break retro compat 1.x
                     saveSuccess = true;
                 }
@@ -299,6 +307,19 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                 }
                 else {
                     logError("data {}: member {} is missing", feature.version(), DATA_2_base64_encoded);
+                }
+
+                if(featureName == NTP_SETTINGS) {
+                    if(siData.findMember(NTP_STATUS)) {
+                        bool ntpStatus;
+                        siData.getMember(NTP_STATUS, ntpStatus);
+
+                        if(!ntpconfig::ntpStatus(ntpStatus)) {
+                            logDebug("ntp status successfully set to {}", ntpStatus);
+                        } else {
+                            logDebug("ntp status set failed");
+                        }
+                    }
                 }
             }
             else {

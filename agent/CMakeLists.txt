@@ -12,6 +12,8 @@ etn_target(exe ${PROJECT_NAME}
         src/fty_config_manager.h
         src/file.cc
         src/file.h
+        src/ntp_service.cc
+        src/ntp_service.h
     FLAGS
         -Wno-disabled-macro-expansion
     USES
