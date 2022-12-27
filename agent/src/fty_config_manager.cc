@@ -312,21 +312,21 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
 
                 // ntp settings exception
                 if ((returnValue == 0) && (featureName == NTP_SETTINGS)) {
+                    returnValue = -1;
                     if (siData.findMember(DATA_2_enable)) {
                         bool state = false;
                         siData.getMember(DATA_2_enable, state);
 
                         if (ntpservice::applyState(state) == 0) {
-                            logDebug("apply ntp state successfully set to {}", state);
+                            logDebug("ntp applyState success (state: {})", state);
+                            returnValue = 0; // restore success
                         }
                         else {
-                            logError("apply ntp state failed");
-                            returnValue = -1;
+                            logError("ntp applyState failed (state: {})", state);
                         }
                     }
                     else {
-                        logError("ntp '{}' property not found", DATA_2_enable);
-                        returnValue = -1;
+                        logError("data {}: member '{}' is missing", feature.version(), DATA_2_enable);
                     }
                 }
             }

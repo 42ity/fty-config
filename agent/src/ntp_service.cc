@@ -98,10 +98,12 @@ namespace ntpservice
     {
         std::string s_out;
         if (auto ret = fty::Process::run("sudo", {"systemctl", "show", "ntp", "-p", "ActiveState"}, s_out); !ret) {
+            logError("run process failed (sudo systemctl {} ntp), ret: {}", "show", ret.error());
             return -1;
         }
 
         state = (s_out.find("=active") != std::string::npos);
+        logDebug("ntp getState: state: {}", state);
         return 0;
     }
 
