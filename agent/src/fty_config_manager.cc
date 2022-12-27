@@ -207,7 +207,7 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
                     si.addMember(DATA_2_base64_encoded) <<= b64;
                     if(featureName == NTP_SETTINGS) {
                         bool ntpStatus;
-                        ntpconfig::getNtpStatus(ntpStatus);
+                        ntpservice::getNtpStatus(ntpStatus);
                         si.addMember(NTP_STATUS) <<= ntpStatus;
                     }
                     featureVersion = DATA_VERSION_2_0; // break retro compat 1.x
@@ -314,7 +314,7 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                         bool ntpStatus;
                         siData.getMember(NTP_STATUS, ntpStatus);
 
-                        if(!ntpconfig::ntpStatus(ntpStatus)) {
+                        if(!ntpservice::ntpStatus(ntpStatus)) {
                             logDebug("ntp status successfully set to {}", ntpStatus);
                         } else {
                             logDebug("ntp status set failed");
