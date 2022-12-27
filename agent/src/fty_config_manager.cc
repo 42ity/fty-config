@@ -72,7 +72,7 @@ static std::string updateIndexForArray(const std::string& member);
 
 #define DATA_VERSION_2_0 "2.0" // data 2.0 (IPM 2.6)
 #define DATA_2_base64_encoded "base64_encoded" // data 2.x
-#define NTP_STATUS "ntp_status" // data 2.x
+#define DATA_2_enable "enable" // data 2.x
 
 const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
 
@@ -205,10 +205,11 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
                 }
                 else {
                     si.addMember(DATA_2_base64_encoded) <<= b64;
-                    if(featureName == NTP_SETTINGS) {
-                        bool ntpStatus;
-                        ntpservice::getNtpStatus(ntpStatus);
-                        si.addMember(NTP_STATUS) <<= ntpStatus;
+                    // ntp settings exception
+                    if (featureName == NTP_SETTINGS) {
+                        bool state = false;
+                        ntpservice::getState(state);
+                        si.addMember(DATA_2_enable) <<= state;
                     }
                     featureVersion = DATA_VERSION_2_0; // break retro compat 1.x
                     saveSuccess = true;
@@ -306,19 +307,26 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                     }
                 }
                 else {
-                    logError("data {}: member {} is missing", feature.version(), DATA_2_base64_encoded);
+                    logError("data {}: member '{}' is missing", feature.version(), DATA_2_base64_encoded);
                 }
 
-                if(featureName == NTP_SETTINGS) {
-                    if(siData.findMember(NTP_STATUS)) {
-                        bool ntpStatus;
-                        siData.getMember(NTP_STATUS, ntpStatus);
+                // ntp settings exception
+                if ((returnValue == 0) && (featureName == NTP_SETTINGS)) {
+                    if (siData.findMember(DATA_2_enable)) {
+                        bool state = false;
+                        siData.getMember(DATA_2_enable, state);
 
-                        if(!ntpservice::ntpStatus(ntpStatus)) {
-                            logDebug("ntp status successfully set to {}", ntpStatus);
-                        } else {
-                            logDebug("ntp status set failed");
+                        if (ntpservice::applyState(state) == 0) {
+                            logDebug("apply ntp state successfully set to {}", state);
                         }
+                        else {
+                            logError("apply ntp state failed");
+                            returnValue = -1;
+                        }
+                    }
+                    else {
+                        logError("ntp '{}' property not found", DATA_2_enable);
+                        returnValue = -1;
                     }
                 }
             }
