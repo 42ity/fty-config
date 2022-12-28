@@ -23,7 +23,7 @@ available-features
     network-host-name = /etc/hostname
     network-agent-settings = /var/lib/fty/etn-ipm2-network/etn-ipm2-network.json
     network-proxy = /etc/default/fty-proxy
-    timezone-settings = /etc/fty/fty-datetime.cfg
+    timezone-settings = /etc/fty/fty-timezone.cfg
     ntp-settings = /etc/ntp.conf
 
 augeas
