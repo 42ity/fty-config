@@ -34,6 +34,7 @@ Build-Depends: debhelper (>= 9),
     libfty-common-mlm-dev,
     libfty-common-messagebus-dev,
     libfty-common-dto-dev,
+    libfty-utils-dev,
     systemd
 
 Package: fty-config

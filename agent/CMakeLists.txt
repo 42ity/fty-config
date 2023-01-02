@@ -25,4 +25,5 @@ etn_target(exe ${PROJECT_NAME}
         fty_common_logging
         fty_common_messagebus
         fty_common_mlm
+        fty-utils
 )
