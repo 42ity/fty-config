@@ -64,9 +64,6 @@ namespace ntpservice
         if (ntpRunProcess("enable") != 0) {
             return -2;
         }
-        if (ntpRunProcess("restart") != 0) { // useful?
-            return -3;
-        }
         return 0;
     }
 
@@ -82,14 +79,11 @@ namespace ntpservice
      */
     static int disableService()
     {
-        if (ntpRunProcess("stop") != 0) { // useful?
+        if (ntpRunProcess("disable") != 0) {
             return -1;
         }
-        if (ntpRunProcess("disable") != 0) {
-            return -2;
-        }
         if (ntpRunProcess("mask") != 0) {
-            return -3;
+            return -2;
         }
         return 0;
     }
