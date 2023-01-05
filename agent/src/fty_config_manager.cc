@@ -30,6 +30,7 @@
 #include "fty-config.h"
 #include "fty_config_exception.h"
 #include "file.h"
+#include "ntp_service.h"
 #include <augeas.h>
 #include <fty_common.h>
 #include <iostream>
@@ -71,6 +72,7 @@ static std::string updateIndexForArray(const std::string& member);
 
 #define DATA_VERSION_2_0 "2.0" // data 2.0 (IPM 2.6)
 #define DATA_2_base64_encoded "base64_encoded" // data 2.x
+#define DATA_2_enable "enable" // data 2.x
 
 const static std::regex augeasArrayregex("(\\w+\\[.*\\])$", std::regex::optimize);
 
@@ -168,7 +170,9 @@ static bool isFeature_Version2(const std::string& featureName)
         || (featureName == NETWORK_AGENT_SETTINGS)
         || (featureName == NETWORK_PROXY)
         || (featureName == DISCOVERY_SETTINGS)
-        || (featureName == DISCOVERY_AGENT_SETTINGS);
+        || (featureName == DISCOVERY_AGENT_SETTINGS)
+        || (featureName == TIMEZONE_SETTINGS)
+        || (featureName == NTP_SETTINGS);
 }
 
 SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
@@ -201,6 +205,12 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
                 }
                 else {
                     si.addMember(DATA_2_base64_encoded) <<= b64;
+                    // ntp settings exception
+                    if (featureName == NTP_SETTINGS) {
+                        bool state = false;
+                        ntpservice::getState(state);
+                        si.addMember(DATA_2_enable) <<= state;
+                    }
                     featureVersion = DATA_VERSION_2_0; // break retro compat 1.x
                     saveSuccess = true;
                 }
@@ -297,7 +307,27 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                     }
                 }
                 else {
-                    logError("data {}: member {} is missing", feature.version(), DATA_2_base64_encoded);
+                    logError("data {}: member '{}' is missing", feature.version(), DATA_2_base64_encoded);
+                }
+
+                // ntp settings exception
+                if ((returnValue == 0) && (featureName == NTP_SETTINGS)) {
+                    returnValue = -1;
+                    if (siData.findMember(DATA_2_enable)) {
+                        bool state = false;
+                        siData.getMember(DATA_2_enable, state);
+
+                        if (ntpservice::applyState(state) == 0) {
+                            logDebug("ntp applyState success (state: {})", state);
+                            returnValue = 0; // restore success
+                        }
+                        else {
+                            logError("ntp applyState failed (state: {})", state);
+                        }
+                    }
+                    else {
+                        logError("data {}: member '{}' is missing", feature.version(), DATA_2_enable);
+                    }
                 }
             }
             else {
