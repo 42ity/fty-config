@@ -472,7 +472,8 @@ void ConfigurationManager::getConfigurationToJson(
         std::string temp = matches[i];
         // Skip all comments
         if (temp.find(COMMENTS_DELIMITER) == std::string::npos) {
-            const char *value, *label;
+            const char* value = nullptr;
+            const char* label = nullptr;
             aug_get(m_aug.get(), matches[i], &value);
             aug_label(m_aug.get(), matches[i], &label);
 
@@ -487,7 +488,7 @@ void ConfigurationManager::getConfigurationToJson(
                             siTmp  = &(siTemp->addMember(elem));
                             siTemp = siTmp;
                         } else {
-                            siTemp->addMember(label) <<= value;
+                            siTemp->addMember(label ? label : "label_null") <<= value;
                             siTmp  = siTemp->findMember(members.front());
                             siTemp = siTmp;
                         }
@@ -503,6 +504,17 @@ void ConfigurationManager::getConfigurationToJson(
             }
             getConfigurationToJson(si, temp.append(ANY_NODES), rootMember);
         }
+    }
+
+    // see http://augeas.net/docs/references/c_api/files/augeas-h.html#aug_match
+    // The caller must free both the array and the entries in it.
+    if (matches) {
+        for (int i = 0; i < nmatches; i++) {
+            if (matches[i]) {
+                free(matches[i]);
+            }
+        }
+        free(matches);
     }
 }
 
@@ -541,11 +553,23 @@ void ConfigurationManager::dumpConfiguration(std::string& path)
         std::string temp = matches[i];
         // Skip all comments
         if (temp.find(COMMENTS_DELIMITER) == std::string::npos) {
-            const char *value, *label;
+            const char* value = nullptr;
+            const char* label = nullptr;
             aug_get(m_aug.get(), matches[i], &value);
             aug_label(m_aug.get(), matches[i], &label);
             dumpConfiguration(temp.append(ANY_NODES));
         }
+    }
+
+    // see http://augeas.net/docs/references/c_api/files/augeas-h.html#aug_match
+    // The caller must free both the array and the entries in it.
+    if (matches) {
+        for (int i = 0; i < nmatches; i++) {
+            if (matches[i]) {
+                free(matches[i]);
+            }
+        }
+        free(matches);
     }
 }
 
