@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
     paramsConfig[NETWORK_HOST_NAME]         = "/etc/hostname";
     paramsConfig[NETWORK_PROXY]             = "/etc/default/fty-proxy";
     paramsConfig[TIMEZONE_SETTINGS]         = "/etc/fty/fty-timezone.cfg";
-    paramsConfig[NTP_SETTINGS]              = "/etc/ntp.conf";
+    paramsConfig[NTP_SETTINGS]              = "/etc/ntpsec/ntp.conf";
 
     // Default augeas configuration.
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";

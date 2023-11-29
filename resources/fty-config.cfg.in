@@ -24,7 +24,7 @@ available-features
     network-agent-settings = /var/lib/fty/etn-ipm2-network/etn-ipm2-network.json
     network-proxy = /etc/default/fty-proxy
     timezone-settings = /etc/fty/fty-timezone.cfg
-    ntp-settings = /etc/ntp.conf
+    ntp-settings = /etc/ntpsec/ntp.conf
 
 augeas
     lensPath = /usr/share/fty/lenses/

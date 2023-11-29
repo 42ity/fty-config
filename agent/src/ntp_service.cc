@@ -25,6 +25,8 @@
 
 namespace ntpservice
 {
+    static const std::string SERVICE_NAME{"ntpsec"};
+
     /**
      * @brief Executes a command to control the Network Time Protocol (NTP) service.
      *
@@ -39,8 +41,8 @@ namespace ntpservice
      */
     static int ntpRunProcess(const std::string& param)
     {
-        if (auto ret = fty::Process::run("sudo", {"systemctl", param, "ntp"}); !ret) {
-            logError("run process failed (sudo systemctl {} ntp), ret: {}", param, ret.error());
+        if (auto ret = fty::Process::run("sudo", {"/bin/systemctl", param, SERVICE_NAME}); !ret) {
+            logError("run process failed (sudo systemctl {} {}), ret: {}", param, SERVICE_NAME, ret.error());
             return -1;
         }
         return 0;
@@ -87,7 +89,7 @@ namespace ntpservice
         // if (ntpRunProcess("stop") != 0) { // useful?
         //     return -1;
         // }
-        
+
         if (ntpRunProcess("disable") != 0) {
             return -2;
         }
@@ -100,13 +102,13 @@ namespace ntpservice
     int getState(bool& state)
     {
         std::string s_out;
-        if (auto ret = fty::Process::run("sudo", {"systemctl", "show", "ntp", "-p", "ActiveState"}, s_out); !ret) {
-            logError("run process failed (sudo systemctl {} ntp), ret: {}", "show", ret.error());
+        if (auto ret = fty::Process::run("sudo", {"/bin/systemctl", "show", SERVICE_NAME, "-p", "ActiveState"}, s_out); !ret) {
+            logError("run process failed (sudo systemctl {} {}), ret: {}", "show", SERVICE_NAME, ret.error());
             return -1;
         }
 
         state = (s_out.find("=active") != std::string::npos);
-        logDebug("ntp getState: state: {}", state);
+        logDebug("{} getState: state: {}", SERVICE_NAME, state);
         return 0;
     }
 
