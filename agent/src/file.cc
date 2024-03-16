@@ -94,8 +94,8 @@ int fileReadToBase64(const std::string& fileName, std::string& b64)
         if (buffer && (size != 0)) {
             b64 = cxxtools::Base64Codec::encode(buffer, unsigned(size));
 
-            // WA libcxxtools10 Base64Codec::encode() automatic lineend wrapping (\r\n @ col 80)
-            // *remove* wrappers after encoding or decode() gives *garbaged* data
+            // libcxxtools10 Base64Codec::encode() add automatic lineend wrapping (\r\n @ col 80)
+            // *remove* wrappers after encoding
             std::string lineend{cxxtools::Base64Codec().lineend()};
             if (!lineend.empty()) {
                 size_t pos{0};

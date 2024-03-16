@@ -27,3 +27,5 @@ etn_target(exe ${PROJECT_NAME}
         fty_common_mlm
         fty-utils
 )
+
+add_subdirectory(tests)
