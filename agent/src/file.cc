@@ -21,7 +21,7 @@
 
 #include "file.h"
 #include <fty_log.h>
-#include <cxxtools/base64codec.h>
+#include <fty_common_base64.h>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -91,19 +91,7 @@ int fileReadToBase64(const std::string& fileName, std::string& b64)
     try {
         size_t size = 0;
         buffer = s_fileRead(fileName, size);
-        if (buffer && (size != 0)) {
-            b64 = cxxtools::Base64Codec::encode(buffer, unsigned(size));
-
-            // libcxxtools10 Base64Codec::encode() add automatic lineend wrapping (\r\n @ col 80)
-            // *remove* wrappers after encoding
-            std::string lineend{cxxtools::Base64Codec().lineend()};
-            if (!lineend.empty()) {
-                size_t pos{0};
-                while ((pos = b64.find(lineend, pos)) != std::string::npos) {
-                    b64.replace(pos, lineend.size(), "");
-                }
-            }
-        }
+        b64 = Base64::encode(buffer, unsigned(size));
     }
     catch (const std::exception& e) {
         logError("{}", e.what());
@@ -123,10 +111,7 @@ int fileRestoreFromBase64(const std::string& fileName, const std::string& b64)
         logDebug("fileName: {}", fileName);
         logDebug("b64: {}", b64);
 
-        std::string buffer;
-        if (!b64.empty()) {
-            buffer = cxxtools::Base64Codec::decode(b64);
-        }
+        const std::string buffer{Base64::decode(b64)};
         //logDebug("buffer: {}", buffer);
         logDebug("buffer size: {}", buffer.size());
 
