@@ -236,6 +236,11 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
                 buffer = createIndexForArray(buffer);
             }
 
+            // IPMPROG-9034: Augeas don't know how to handle empty file (.cfg)
+            if (buffer == "null") {
+                buffer = "{}"; // empty object
+            }
+
             Feature feature;
             feature.set_version(featureVersion);
             feature.set_data(buffer);
