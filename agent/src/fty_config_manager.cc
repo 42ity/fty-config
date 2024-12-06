@@ -172,7 +172,8 @@ static bool isFeature_Version2(const std::string& featureName)
         || (featureName == DISCOVERY_SETTINGS)
         || (featureName == DISCOVERY_AGENT_SETTINGS)
         || (featureName == TIMEZONE_SETTINGS)
-        || (featureName == NTP_SETTINGS);
+        || (featureName == NTP_SETTINGS)
+        || (featureName == GRAPHITE_SETTINGS);
 }
 
 SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)

@@ -45,6 +45,7 @@ constexpr auto NETWORK_AGENT_SETTINGS    = "network-agent-settings";
 constexpr auto NETWORK_PROXY             = "network-proxy";
 constexpr auto TIMEZONE_SETTINGS         = "timezone-settings";
 constexpr auto NTP_SETTINGS              = "ntp-settings";
+constexpr auto GRAPHITE_SETTINGS         = "graphite-settings";
 
 // Augeas definition
 constexpr auto AUGEAS_LENS_PATH = "AugeasLensPath";
