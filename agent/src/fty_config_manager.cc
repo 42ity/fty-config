@@ -124,13 +124,19 @@ void ConfigurationManager::init()
     }
 }
 
+// Load augeas to avoid any cache
+void ConfigurationManager::augeasLoad() const
+{
+    if (m_aug != nullptr) {
+        logDebug("Loading augeas...");
+        aug_load(m_aug.get());
+    }
+}
+
 void ConfigurationManager::handleRequest(messagebus::Message msg)
 {
     try {
         log_debug("handleRequest...");
-
-        // Load augeas for any request (to avoid any cache)
-        aug_load(m_aug.get());
 
         // Get the query
         Query query;
@@ -181,12 +187,13 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
     log_debug("Save configuration...");
 
     std::map<FeatureName, FeatureAndStatus> mapFeaturesData;
+    bool augeasIsLoaded{false};
 
     for (const auto& featureName : query.features()) {
         // Get the full configuration file path name from class variable m_parameters
         const std::string fileName(m_parameters.at(featureName));
 
-        logDebug("Save feature {} (file: {})", featureName, fileName);
+        logDebug("Save feature '{}' (file: {})", featureName, fileName);
 
         // Get the last pattern
         std::size_t found = fileName.find_last_of(FILE_SEPARATOR);
@@ -217,6 +224,12 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
                 }
             }
             else {
+                // data 1.x requires augeas; call 'load' to reset cache
+                if (!augeasIsLoaded) {
+                    augeasLoad();
+                    augeasIsLoaded = true;
+                }
+
                 // data 1.x, get augeas configuration
                 std::string fileNameFullPath = AUGEAS_FILES + fileName + ANY_NODES;
                 std::string confFileName = fileName.substr(found + 1);
@@ -225,8 +238,8 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
                 useAugeas = true;
             }
 
-            logDebug("save {}: version: {}, success: {}", featureName, featureVersion, saveSuccess);
-            //logDebug("save {}: {}", featureName, JSON::writeToString(si, true));
+            logDebug("save '{}': version: {}, success: {}", featureName, featureVersion, saveSuccess);
+            //logDebug("save '{}': {}", featureName, JSON::writeToString(si, true));
 
             // Persist DTO
             std::string buffer = JSON::writeToString(si, false);
@@ -263,6 +276,9 @@ SaveResponse ConfigurationManager::saveConfiguration(const SaveQuery& query)
 
             mapFeaturesData[featureName] = fs;
         }
+        else {
+            logDebug("feature '{}' not found (file: {})", featureName, fileName);
+        }
     }
 
     log_debug("Save configuration done");
@@ -278,13 +294,14 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
     google::protobuf::Map<FeatureName, Feature>& mapFeaturesData = *(queryAux.mutable_map_features_data());
 
     std::map<FeatureName, FeatureStatus> mapStatus;
+    bool augeasIsLoaded{false};
 
     for (const auto& item : mapFeaturesData) {
         const std::string& featureName = item.first;
         const Feature&     feature     = item.second;
         const std::string  fileName(m_parameters.at(featureName));
 
-        logDebug("Restore feature {} (version: {}, file: {})", featureName, feature.version(), fileName);
+        logDebug("Restore feature '{}' (version: {}, file: {})", featureName, feature.version(), fileName);
 
         FeatureStatus featureStatus;
 
@@ -337,6 +354,12 @@ RestoreResponse ConfigurationManager::restoreConfiguration(const RestoreQuery& q
                 }
             }
             else {
+                // data 1.x requires augeas; call 'load' to reset cache
+                if (!augeasIsLoaded) {
+                    augeasLoad();
+                    augeasIsLoaded = true;
+                }
+
                 // data 1.x: restore with augeas
                 const std::string configurationFileName = AUGEAS_FILES + fileName;
                 returnValue = setConfiguration(siData, configurationFileName);
