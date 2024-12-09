@@ -25,6 +25,7 @@ available-features
     network-proxy = /etc/default/fty-proxy
     timezone-settings = /etc/fty/fty-timezone.cfg
     ntp-settings = /etc/ntpsec/ntp.conf
+    graphite-settings = /etc/etn-graphite/etn-graphite.cfg
 
 augeas
     lensPath = /usr/share/fty/lenses/
