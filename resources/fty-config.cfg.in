@@ -26,6 +26,7 @@ available-features
     timezone-settings = /etc/fty/fty-timezone.cfg
     ntp-settings = /etc/ntpsec/ntp.conf
     graphite-settings = /etc/etn-graphite/etn-graphite.cfg
+    alert-agent-settings = /etc/fty-alert-engine/fty-alert-engine.cfg
 
 augeas
     lensPath = /usr/share/fty/lenses/
