@@ -131,6 +131,7 @@ int main(int argc, char* argv[])
     paramsConfig[TIMEZONE_SETTINGS]         = "/etc/fty/fty-timezone.cfg";
     paramsConfig[NTP_SETTINGS]              = "/etc/ntpsec/ntp.conf";
     paramsConfig[GRAPHITE_SETTINGS]         = "/etc/etn-graphite/etn-graphite.cfg";
+    paramsConfig[ALERT_AGENT_SETTINGS]      = "/etc/fty-alert-engine/fty-alert-engine.cfg";
 
     // Default augeas configuration.
     paramsConfig[AUGEAS_LENS_PATH] = "/usr/share/fty/lenses/";
@@ -165,6 +166,7 @@ int main(int argc, char* argv[])
         paramsConfig[TIMEZONE_SETTINGS]         = config.getEntry("available-features/timezone-settings", "");
         paramsConfig[NTP_SETTINGS]              = config.getEntry("available-features/ntp-settings", "");
         paramsConfig[GRAPHITE_SETTINGS]         = config.getEntry("available-features/graphite-settings", "");
+        paramsConfig[ALERT_AGENT_SETTINGS]      = config.getEntry("available-features/alert-agent-settings", "");
 
         // Augeas configuration
         paramsConfig[AUGEAS_LENS_PATH] = config.getEntry("augeas/lensPath", "/usr/share/fty/lenses/");
